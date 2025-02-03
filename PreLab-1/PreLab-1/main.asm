@@ -32,6 +32,7 @@ SETUP:
 	OUT		PORTB, R16	// Se configuran los pines para estar inicialmente apagados
 
 	LDI		R17, 0xFF	// Variable para guardar estado de botones
+	LDI		R20, 0x00	// Variable para guardar estado de Leds (Suma)
 
 // Loop infinito
 MAIN:
@@ -41,14 +42,18 @@ MAIN:
 	CALL	DELAY
 	IN		R16, PIND	// Lee nuevamente R16 para ver si no fue un error de lectura
 	CP		R17, R16
-	BREQ	MAIN		// Si fue un erro de lectura regresa a MAIN
+	BREQ	MAIN		// Si fue un error de lectura regresa a MAIN
 	MOV		R17, R16	// Guardamos el valor de la lectura anterior en R17
-
+	CPI		R17, 0xFE
+	BREQ	SUMA		// Comprobamos que se presiona pb1, sí: suma, no: ignora
+	CPI		R17, 0xFD
+	BREQ	RESTA		// Comprobamos que se presioana pb2, sí: resta, no: ignora
+	RJMP	MAIN
 
 // Sub-rutina (no de interrupcion)
 DELAY: // Se realiza un delay como medida antirrebote
 	LDI		R18, 0xFF
-	LDI		R19, 0x04	// Cargamos los valores necesarios a dos registros
+	LDI		R19, 0x05	// Cargamos los valores necesarios a dos registros
 SUB_DELAY:
 	DEC		R18
 	CPI		R18, 0		
@@ -57,3 +62,24 @@ SUB_DELAY:
 	CPI		R19, 0		// Se resta 1 a R19 hasta que llegue a 0	
 	RET					// Al llegar R19 a 0 regresa a MAIN: CALL
 
+SUMA: // Se realiza la suma en R20 como sub-rutina
+	INC		R20
+	CPI		R20, 0x10	// Le sumamos 1 a R20 y comparamos si hay overflow
+	BREQ	OVERFLOW_SUM	// Si hay overflow, reinicia el sumador
+	OUT		PORTB, R20
+	RJMP	MAIN
+OVERFLOW_SUM:
+	LDI		R20, 0X00	// Si hay overflow, hacemos reset al registro R20
+	OUT		PORTB, R20	// Le damos la señal a los pines para encender los leds
+	RJMP	MAIN
+
+RESTA: // Se realiza la resta en R20 como sub-rutina
+	DEC		R20
+	CPI		R20, 0xFF	// Le restamos 1 a R20 y comparamos si hay underflow
+	BREQ	UNDERFLOW_RES		// Si hay underflow, setea el sumador
+	OUT		PORTB, R20	
+	RJMP	MAIN
+UNDERFLOW_RES:
+	LDI		R20, 0X0F	// Si hay underflow, hacemos set al registro R20
+	OUT		PORTB, R20	// Le damos la señal a los pines para encender los leds
+	RJMP	MAIN
