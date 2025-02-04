@@ -39,23 +39,23 @@ SETUP:
 
 // Loop infinito
 MAIN:
-	IN		R16, PIND	// Se guarda el estado de PORTD en R16
+	IN		R16, PINB	// Se guarda el estado de PORTB en R16
 	CP		R17, R16	// Compara el estado anterior con el estado actual del pb1
 	BREQ	MAIN		// Si es el mismo estado repite los dos pasos anteriores
 	CALL	DELAY
-	IN		R16, PIND	// Lee nuevamente R16 para ver si no fue un error de lectura
+	IN		R16, PINB	// Lee nuevamente R16 para ver si no fue un error de lectura
 	CP		R17, R16
 	BREQ	MAIN		// Si fue un error de lectura regresa a MAIN
 	MOV		R17, R16	// Guardamos el valor de la lectura anterior en R17
-	SBIS	R17, 0		// Comprobamos que se presiona pb1, sí: suma, no: ignora
-	CALL	SUMA_C1		
-	SBIS	R17, 1
+	SBIS	PINB, 0		
+	CALL	SUMA_C1		// Comprobamos que se presiona pb1, sí: suma_c1, no: ignora
+	SBIS	PINB, 1
 	CALL	RESTA_C1	// Comprobamos que se presiona pb2, sí: resta_c1, no: ignora
-	SBIS	R17, 2
+	SBIS	PINB, 2
 	CALL	SUMA_C2		// Comprobamos que se presiona pb3, sí: suma_c2, no: ignora
-	SBIS	R17, 3
-	CALL	RESTA_C1	// Comprobamos que se presiona pb4, sí: resta_c2, no: ignora
-	SBIS	R18, 4
+	SBIS	PINB, 3
+	CALL	RESTA_C2	// Comprobamos que se presiona pb4, sí: resta_c2, no: ignora
+	SBIS	PINB, 4
 	CALL	SUMA_CONT	// Comprobamos que se presiona pb5, sí: suma_cont, no:ignora
 	RJMP	MAIN
 
@@ -75,42 +75,93 @@ SUMA_C1: // Se realiza la suma en R20 como sub-rutina
 	INC		R20
 	CPI		R20, 0x10	// Le sumamos 1 a R20 y comparamos si hay overflow
 	BREQ	OVERFLOW_SUMC1	// Si hay overflow, reinicia el sumador
-	OUT		PORTD, R20
+	MOV		R22, R21	// Guardamos el dato de R21 en R22 para imprimir en PORTD
+	LSL		R22
+	LSL		R22
+	LSL		R22
+	LSL		R22			// Se corren los bits de R21 para usar solo PORTD
+	ADD		R22, R20	// Se suman los dos contadores en una variable
+	OUT		PORTD, R22	// Se imprime el valor de los contadores en PORTD
 	RET
 OVERFLOW_SUMC1:
 	LDI		R20, 0X00	// Si hay overflow, hacemos reset al registro R20
-	OUT		PORTD, R20	// Le damos la señal a los pines para encender los leds
+	MOV		R22, R21	// Guardamos el dato de R21 en R22 para imprimir en PORTD
+	LSL		R22
+	LSL		R22
+	LSL		R22
+	LSL		R22			// Se corren los bits de R21 para usar solo PORTD
+	ADD		R22, R20	// Se suman los dos contadores en una variable
+	OUT		PORTD, R22	// Se imprime el valor de los contadores en PORTD
 	RET
 
 RESTA_C1: // Se realiza la resta en R20 como sub-rutina
 	DEC		R20
 	CPI		R20, 0xFF	// Le restamos 1 a R20 y comparamos si hay underflow
 	BREQ	UNDERFLOW_RESC1		// Si hay underflow, setea el sumador
-	OUT		PORTB, R20	
-	RJMP	MAIN
+	MOV		R22, R21	// Guardamos el dato de R21 en R22 para imprimir en PORTD
+	LSL		R22
+	LSL		R22
+	LSL		R22
+	LSL		R22			// Se corren los bits de R21 para usar solo PORTD
+	ADD		R22, R20	// Se suman los dos contadores en una variable
+	OUT		PORTD, R22	// Se imprime el valor de los contadores en PORTD
+	RET
 UNDERFLOW_RESC1:
 	LDI		R20, 0X0F	// Si hay underflow, hacemos set al registro R20
-	OUT		PORTB, R20	// Le damos la señal a los pines para encender los leds
-	RJMP	MAIN
+	MOV		R22, R21	// Guardamos el dato de R21 en R22 para imprimir en PORTD
+	LSL		R22
+	LSL		R22
+	LSL		R22
+	LSL		R22			// Se corren los bits de R21 para usar solo PORTD
+	ADD		R22, R20	// Se suman los dos contadores en una variable
+	OUT		PORTD, R22	// Se imprime el valor de los contadores en PORTD
+	RET
 
 SUMA_C2: // Se realiza la suma en R21 como sub-rutina
 	INC		R21
 	CPI		R21, 0x10	// Le sumamos 1 a R21 y comparamos si hay overflow
 	BREQ	OVERFLOW_SUMC2	// Si hay overflow, reinicia el sumador
-	OUT		PORTC, R21
-	RJMP	MAIN
+	MOV		R22, R21	// Guardamos el dato de R21 en R22 para imprimir en PORTD
+	LSL		R22
+	LSL		R22
+	LSL		R22
+	LSL		R22			// Se corren los bits de R21 para usar solo PORTD
+	ADD		R22, R20	// Se suman los dos contadores en una variable
+	OUT		PORTD, R22	// Se imprime el valor de los contadores en PORTD
+	RET
 OVERFLOW_SUMC2:
 	LDI		R21, 0X00	// Si hay overflow, hacemos reset al registro R21
-	OUT		PORTC, R21	// Le damos la señal a los pines para encender los leds
-	RJMP	MAIN
+	MOV		R22, R21	// Guardamos el dato de R21 en R22 para imprimir en PORTD
+	LSL		R22
+	LSL		R22
+	LSL		R22
+	LSL		R22			// Se corren los bits de R21 para usar solo PORTD
+	ADD		R22, R20	// Se suman los dos contadores en una variable
+	OUT		PORTD, R22	// Se imprime el valor de los contadores en PORTD
+	RET
 
 RESTA_C2: // Se realiza la resta en R20 como sub-rutina
 	DEC		R21
 	CPI		R21, 0xFF	// Le restamos 1 a R21 y comparamos si hay underflow
 	BREQ	UNDERFLOW_RESC2		// Si hay underflow, setea el sumador
-	OUT		PORTC, R21
-	RJMP	MAIN
+	MOV		R22, R21	// Guardamos el dato de R21 en R22 para imprimir en PORTD
+	LSL		R22
+	LSL		R22
+	LSL		R22
+	LSL		R22			// Se corren los bits de R21 para usar solo PORTD
+	ADD		R22, R20	// Se suman los dos contadores en una variable
+	OUT		PORTD, R22	// Se imprime el valor de los contadores en PORTD
+	RET
 UNDERFLOW_RESC2:
 	LDI		R20, 0X0F	// Si hay underflow, hacemos set al registro R21
-	OUT		PORTC, R21	// Le damos la señal a los pines para encender los leds
-	RJMP	MAIN
+	MOV		R22, R21	// Guardamos el dato de R21 en R22 para imprimir en PORTD
+	LSL		R22
+	LSL		R22
+	LSL		R22
+	LSL		R22			// Se corren los bits de R21 para usar solo PORTD
+	ADD		R22, R20	// Se suman los dos contadores en una variable
+	OUT		PORTD, R22	// Se imprime el valor de los contadores en PORTD
+	RET
+
+SUMA_CONT:
+	RET
