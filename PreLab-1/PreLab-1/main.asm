@@ -21,18 +21,21 @@ SETUP:
 	// Se configuran pines de entrada y salida (DDRx, PORTx, PINx)
 	// Se configura PORTD como entrada con pull-up habilitado
 	LDI		R16, 0x00
-	OUT		DDRD, R16	// Se configura el puerto D como entrada
+	OUT		DDRB, R16	// Se configura el puerto B como entrada
 	LDI		R16, 0xFF
-	OUT		PORTD, R16	// Se configuran los pines con pull-up activado
+	OUT		PORTB, R16	// Se configuran los pines con pull-up activado
 
 	// Se configura PORTB como salida inicialmente apagado
 	LDI		R16, 0xFF
-	OUT		DDRB, R16	// Se configura el puerto B como salida
+	OUT		DDRD, R16	// Se configura el puerto D como salida
+	OUT		DDRC, R16	// Se configura el puerto C como salida
 	LDI		R16, 0x00
-	OUT		PORTB, R16	// Se configuran los pines para estar inicialmente apagados
+	OUT		PORTC, R16
+	OUT		PORTD, R16	// Se configuran los pines para estar inicialmente apagados
 
 	LDI		R17, 0xFF	// Variable para guardar estado de botones
-	LDI		R20, 0x00	// Variable para guardar estado de Leds (Suma)
+	LDI		R20, 0x00	// Variable para guardar estado de Leds contador 1
+	LDI		R21, 0x00	// Variable para guardar estado de Leds contador 2
 
 // Loop infinito
 MAIN:
@@ -44,10 +47,16 @@ MAIN:
 	CP		R17, R16
 	BREQ	MAIN		// Si fue un error de lectura regresa a MAIN
 	MOV		R17, R16	// Guardamos el valor de la lectura anterior en R17
-	CPI		R17, 0xFE
-	BREQ	SUMA		// Comprobamos que se presiona pb1, sí: suma, no: ignora
-	CPI		R17, 0xFD
-	BREQ	RESTA		// Comprobamos que se presioana pb2, sí: resta, no: ignora
+	SBIS	R17, 0		// Comprobamos que se presiona pb1, sí: suma, no: ignora
+	CALL	SUMA_C1		
+	SBIS	R17, 1
+	CALL	RESTA_C1	// Comprobamos que se presiona pb2, sí: resta_c1, no: ignora
+	SBIS	R17, 2
+	CALL	SUMA_C2		// Comprobamos que se presiona pb3, sí: suma_c2, no: ignora
+	SBIS	R17, 3
+	CALL	RESTA_C1	// Comprobamos que se presiona pb4, sí: resta_c2, no: ignora
+	SBIS	R18, 4
+	CALL	SUMA_CONT	// Comprobamos que se presiona pb5, sí: suma_cont, no:ignora
 	RJMP	MAIN
 
 // Sub-rutina (no de interrupcion)
@@ -62,24 +71,46 @@ SUB_DELAY:
 	CPI		R19, 0		// Se resta 1 a R19 hasta que llegue a 0	
 	RET					// Al llegar R19 a 0 regresa a MAIN: CALL
 
-SUMA: // Se realiza la suma en R20 como sub-rutina
+SUMA_C1: // Se realiza la suma en R20 como sub-rutina
 	INC		R20
 	CPI		R20, 0x10	// Le sumamos 1 a R20 y comparamos si hay overflow
-	BREQ	OVERFLOW_SUM	// Si hay overflow, reinicia el sumador
-	OUT		PORTB, R20
-	RJMP	MAIN
-OVERFLOW_SUM:
+	BREQ	OVERFLOW_SUMC1	// Si hay overflow, reinicia el sumador
+	OUT		PORTD, R20
+	RET
+OVERFLOW_SUMC1:
 	LDI		R20, 0X00	// Si hay overflow, hacemos reset al registro R20
+	OUT		PORTD, R20	// Le damos la señal a los pines para encender los leds
+	RET
+
+RESTA_C1: // Se realiza la resta en R20 como sub-rutina
+	DEC		R20
+	CPI		R20, 0xFF	// Le restamos 1 a R20 y comparamos si hay underflow
+	BREQ	UNDERFLOW_RESC1		// Si hay underflow, setea el sumador
+	OUT		PORTB, R20	
+	RJMP	MAIN
+UNDERFLOW_RESC1:
+	LDI		R20, 0X0F	// Si hay underflow, hacemos set al registro R20
 	OUT		PORTB, R20	// Le damos la señal a los pines para encender los leds
 	RJMP	MAIN
 
-RESTA: // Se realiza la resta en R20 como sub-rutina
-	DEC		R20
-	CPI		R20, 0xFF	// Le restamos 1 a R20 y comparamos si hay underflow
-	BREQ	UNDERFLOW_RES		// Si hay underflow, setea el sumador
-	OUT		PORTB, R20	
+SUMA_C2: // Se realiza la suma en R21 como sub-rutina
+	INC		R21
+	CPI		R21, 0x10	// Le sumamos 1 a R21 y comparamos si hay overflow
+	BREQ	OVERFLOW_SUMC2	// Si hay overflow, reinicia el sumador
+	OUT		PORTC, R21
 	RJMP	MAIN
-UNDERFLOW_RES:
-	LDI		R20, 0X0F	// Si hay underflow, hacemos set al registro R20
-	OUT		PORTB, R20	// Le damos la señal a los pines para encender los leds
+OVERFLOW_SUMC2:
+	LDI		R21, 0X00	// Si hay overflow, hacemos reset al registro R21
+	OUT		PORTC, R21	// Le damos la señal a los pines para encender los leds
+	RJMP	MAIN
+
+RESTA_C2: // Se realiza la resta en R20 como sub-rutina
+	DEC		R21
+	CPI		R21, 0xFF	// Le restamos 1 a R21 y comparamos si hay underflow
+	BREQ	UNDERFLOW_RESC2		// Si hay underflow, setea el sumador
+	OUT		PORTC, R21
+	RJMP	MAIN
+UNDERFLOW_RESC2:
+	LDI		R20, 0X0F	// Si hay underflow, hacemos set al registro R21
+	OUT		PORTC, R21	// Le damos la señal a los pines para encender los leds
 	RJMP	MAIN
