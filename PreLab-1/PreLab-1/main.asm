@@ -121,9 +121,14 @@ RESTA_C2: // Se realiza la resta en R20 como sub-rutina
 	CALL	CONT_PORTD
 	RET
 UNDERFLOW_RESC2:
-	LDI		R20, 0X0F	// Si hay underflow, hacemos set al registro R21
+	LDI		R21, 0X0F	// Si hay underflow, hacemos set al registro R21
 	CALL	CONT_PORTD
 	RET
 
 SUMA_CONT:
+	MOV		R23, R21	// Se carga el valor del contador 2 al registro R23 
+	ADD		R23, R20	// Se realiza la suma del contador 1 y 2 en R23
+	OUT		PORTC, R23	// Se imprime el valor de la suma a PORTC
+	/* Debido a que la suma puede generar como máximo un valor de 0x1E,
+	   se utiliza el bit 5 como referencia para verificar si existe overflow. */
 	RET
