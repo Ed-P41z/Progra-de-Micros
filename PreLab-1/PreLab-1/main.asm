@@ -71,10 +71,7 @@ SUB_DELAY:
 	CPI		R19, 0		// Se resta 1 a R19 hasta que llegue a 0	
 	RET					// Al llegar R19 a 0 regresa a MAIN: CALL
 
-SUMA_C1: // Se realiza la suma en R20 como sub-rutina
-	INC		R20
-	CPI		R20, 0x10	// Le sumamos 1 a R20 y comparamos si hay overflow
-	BREQ	OVERFLOW_SUMC1	// Si hay overflow, reinicia el sumador
+CONT_PORTD:
 	MOV		R22, R21	// Guardamos el dato de R21 en R22 para imprimir en PORTD
 	LSL		R22
 	LSL		R22
@@ -83,84 +80,49 @@ SUMA_C1: // Se realiza la suma en R20 como sub-rutina
 	ADD		R22, R20	// Se suman los dos contadores en una variable
 	OUT		PORTD, R22	// Se imprime el valor de los contadores en PORTD
 	RET
+
+SUMA_C1: // Se realiza la suma en R20 como sub-rutina
+	INC		R20
+	CPI		R20, 0x10	// Le sumamos 1 a R20 y comparamos si hay overflow
+	BREQ	OVERFLOW_SUMC1	// Si hay overflow, reinicia el sumador
+	CALL	CONT_PORTD
+	RET
 OVERFLOW_SUMC1:
 	LDI		R20, 0X00	// Si hay overflow, hacemos reset al registro R20
-	MOV		R22, R21	// Guardamos el dato de R21 en R22 para imprimir en PORTD
-	LSL		R22
-	LSL		R22
-	LSL		R22
-	LSL		R22			// Se corren los bits de R21 para usar solo PORTD
-	ADD		R22, R20	// Se suman los dos contadores en una variable
-	OUT		PORTD, R22	// Se imprime el valor de los contadores en PORTD
+	CALL	CONT_PORTD
 	RET
 
 RESTA_C1: // Se realiza la resta en R20 como sub-rutina
 	DEC		R20
 	CPI		R20, 0xFF	// Le restamos 1 a R20 y comparamos si hay underflow
 	BREQ	UNDERFLOW_RESC1		// Si hay underflow, setea el sumador
-	MOV		R22, R21	// Guardamos el dato de R21 en R22 para imprimir en PORTD
-	LSL		R22
-	LSL		R22
-	LSL		R22
-	LSL		R22			// Se corren los bits de R21 para usar solo PORTD
-	ADD		R22, R20	// Se suman los dos contadores en una variable
-	OUT		PORTD, R22	// Se imprime el valor de los contadores en PORTD
+	CALL	CONT_PORTD
 	RET
 UNDERFLOW_RESC1:
 	LDI		R20, 0X0F	// Si hay underflow, hacemos set al registro R20
-	MOV		R22, R21	// Guardamos el dato de R21 en R22 para imprimir en PORTD
-	LSL		R22
-	LSL		R22
-	LSL		R22
-	LSL		R22			// Se corren los bits de R21 para usar solo PORTD
-	ADD		R22, R20	// Se suman los dos contadores en una variable
-	OUT		PORTD, R22	// Se imprime el valor de los contadores en PORTD
+	CALL	CONT_PORTD
 	RET
 
 SUMA_C2: // Se realiza la suma en R21 como sub-rutina
 	INC		R21
 	CPI		R21, 0x10	// Le sumamos 1 a R21 y comparamos si hay overflow
 	BREQ	OVERFLOW_SUMC2	// Si hay overflow, reinicia el sumador
-	MOV		R22, R21	// Guardamos el dato de R21 en R22 para imprimir en PORTD
-	LSL		R22
-	LSL		R22
-	LSL		R22
-	LSL		R22			// Se corren los bits de R21 para usar solo PORTD
-	ADD		R22, R20	// Se suman los dos contadores en una variable
-	OUT		PORTD, R22	// Se imprime el valor de los contadores en PORTD
+	CALL	CONT_PORTD
 	RET
 OVERFLOW_SUMC2:
 	LDI		R21, 0X00	// Si hay overflow, hacemos reset al registro R21
-	MOV		R22, R21	// Guardamos el dato de R21 en R22 para imprimir en PORTD
-	LSL		R22
-	LSL		R22
-	LSL		R22
-	LSL		R22			// Se corren los bits de R21 para usar solo PORTD
-	ADD		R22, R20	// Se suman los dos contadores en una variable
-	OUT		PORTD, R22	// Se imprime el valor de los contadores en PORTD
+	CALL	CONT_PORTD
 	RET
 
 RESTA_C2: // Se realiza la resta en R20 como sub-rutina
 	DEC		R21
 	CPI		R21, 0xFF	// Le restamos 1 a R21 y comparamos si hay underflow
 	BREQ	UNDERFLOW_RESC2		// Si hay underflow, setea el sumador
-	MOV		R22, R21	// Guardamos el dato de R21 en R22 para imprimir en PORTD
-	LSL		R22
-	LSL		R22
-	LSL		R22
-	LSL		R22			// Se corren los bits de R21 para usar solo PORTD
-	ADD		R22, R20	// Se suman los dos contadores en una variable
-	OUT		PORTD, R22	// Se imprime el valor de los contadores en PORTD
+	CALL	CONT_PORTD
 	RET
 UNDERFLOW_RESC2:
 	LDI		R20, 0X0F	// Si hay underflow, hacemos set al registro R21
-	MOV		R22, R21	// Guardamos el dato de R21 en R22 para imprimir en PORTD
-	LSL		R22
-	LSL		R22
-	LSL		R22
-	LSL		R22			// Se corren los bits de R21 para usar solo PORTD
-	ADD		R22, R20	// Se suman los dos contadores en una variable
-	OUT		PORTD, R22	// Se imprime el valor de los contadores en PORTD
+	CALL	CONT_PORTD
 	RET
 
 SUMA_CONT:
