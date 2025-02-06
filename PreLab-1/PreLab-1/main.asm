@@ -62,7 +62,7 @@ MAIN:
 // Sub-rutina (no de interrupcion)
 DELAY: // Se realiza un delay como medida antirrebote
 	LDI		R18, 0xFF
-	LDI		R19, 0x05	// Cargamos los valores necesarios a dos registros
+	LDI		R19, 0xFF	// Cargamos los valores necesarios a dos registros
 SUB_DELAY:
 	DEC		R18
 	CPI		R18, 0		
