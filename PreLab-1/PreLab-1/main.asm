@@ -18,6 +18,12 @@ OUT		SPH, R16
 
 // Se configura el MCU
 SETUP:
+	// Se realiza la configuración del prescaler al valor deseado
+	LDI R16, (1 << CLKPCE)
+	STS CLKPR, R16		// Se haiblita la configuracion del prescaler
+	LDI R16, 0x04
+	STS CLKPR, R16 // Se configura el prescaler a 1MHz
+
 	// Se configuran pines de entrada y salida (DDRx, PORTx, PINx)
 	// Se configura PORTD como entrada con pull-up habilitado
 	LDI		R16, 0x00
