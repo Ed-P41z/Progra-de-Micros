@@ -19,19 +19,19 @@ OUT		SPH, R16
 // Se configura el MCU
 SETUP:
 	// Se realiza la configuración del prescaler al valor deseado
-	LDI R16, (1 << CLKPCE)
-	STS CLKPR, R16		// Se haiblita la configuracion del prescaler
-	LDI R16, 0x04
-	STS CLKPR, R16 // Se configura el prescaler a 1MHz
+	LDI		R16, (1 << CLKPCE)
+	STS		CLKPR, R16	// Se haiblita la configuracion del prescaler
+	LDI		R16, 0x04
+	STS		CLKPR, R16	// Se configura el prescaler a 1MHz
 
 	// Se configuran pines de entrada y salida (DDRx, PORTx, PINx)
-	// Se configura PORTD como entrada con pull-up habilitado
+	// Se configura PORTB como entrada con pull-up habilitado
 	LDI		R16, 0x00
 	OUT		DDRB, R16	// Se configura el puerto B como entrada
 	LDI		R16, 0xFF
 	OUT		PORTB, R16	// Se configuran los pines con pull-up activado
 
-	// Se configura PORTB como salida inicialmente apagado
+	// Se configura PORTD y PORTD como salida inicialmente apagado
 	LDI		R16, 0xFF
 	OUT		DDRD, R16	// Se configura el puerto D como salida
 	OUT		DDRC, R16	// Se configura el puerto C como salida
@@ -120,7 +120,7 @@ OVERFLOW_SUMC2:
 	CALL	CONT_PORTD
 	RET
 
-RESTA_C2: // Se realiza la resta en R20 como sub-rutina
+RESTA_C2: // Se realiza la resta en R21 como sub-rutina
 	DEC		R21
 	CPI		R21, 0xFF	// Le restamos 1 a R21 y comparamos si hay underflow
 	BREQ	UNDERFLOW_RESC2		// Si hay underflow, setea el sumador
