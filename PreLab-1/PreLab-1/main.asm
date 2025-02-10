@@ -31,7 +31,7 @@ SETUP:
 	LDI		R16, 0xFF
 	OUT		PORTB, R16	// Se configuran los pines con pull-up activado
 
-	// Se configura PORTD y PORTD como salida inicialmente apagado
+	// Se configura PORTD y PORTC como salida inicialmente apagado
 	LDI		R16, 0xFF
 	OUT		DDRD, R16	// Se configura el puerto D como salida
 	OUT		DDRC, R16	// Se configura el puerto C como salida
@@ -68,13 +68,14 @@ MAIN:
 // Sub-rutina (no de interrupcion)
 DELAY: // Se realiza un delay como medida antirrebote
 	LDI		R18, 0xFF
-	LDI		R19, 0xFF	// Cargamos los valores necesarios a dos registros
+	LDI		R19, 0x04	// Cargamos los valores necesarios a dos registros
 SUB_DELAY:
 	DEC		R18
 	CPI		R18, 0		
 	BRNE	SUB_DELAY	// Se resta 1 a R18 hasta que llegue a 0 y ignora el BRNE
 	DEC		R19
 	CPI		R19, 0		// Se resta 1 a R19 hasta que llegue a 0	
+	BRNE	SUB_DELAY
 	RET					// Al llegar R19 a 0 regresa a MAIN: CALL
 
 CONT_PORTD:
