@@ -1,2 +1,5 @@
+Link al repositorio en GitHub
+https://github.com/Ed-P41z/Progra-de-Micros
+
 Video Explicativo Laboratorio 1:
 https://youtu.be/PVPnFqjBvnU?feature=shared
