@@ -44,10 +44,12 @@ SETUP:
 	LDI		R18, 0x00	// Variable para guardar estado de Leds
 
 	// Se configura PORTB como entrada con pull-up habilitado
-	LDI		R16, 0x20
+	LDI		R16, 0x00
 	OUT		DDRB, R16	// Se configura el puerto B como entrada y un bit como salida
-	LDI		R16, 0xDF
+	SBI		DDRB, PB5
+	LDI		R16, 0xFF
 	OUT		PORTB, R16	// Se configuran los pines con pull-up activado
+	CBI		PORTB, PB5	// El bit está inicialmente apagado
 
 	LDI		R20, 0x00	// Variable para guardar estado de Leds contador
 	LDI		R21, 0x00	// Variable para guardar estado de Leds timer
@@ -60,31 +62,32 @@ MAIN:
 	// Anti-Rebotes y sumador del display
 	IN		R16, PINB	// Se guarda el estado de PORTB en R16
 	CP		R22, R16	// Compara el estado anterior con el estado actual del pb
-	BREQ	TIMER		// Si es el mismo estado repite los dos pasos anteriores
+	BREQ	TIMER		// Si es el mismo estado salta a timer para que realice la suma a los 100ms
 	CALL	DELAY
 	IN		R16, PINB	// Lee nuevamente R16 para ver si no fue un error de lectura
 	CP		R22, R16
-	BREQ	TIMER		// Si fue un error de lectura regresa a MAIN
+	BREQ	TIMER		// Si fue un error de lectura salta a timer para realizar la suma a los 100ms
 	MOV		R22, R16	// Guardamos el valor de la lectura anterior en R22
 	SBIS	PINB, 0		
 	CALL	SUMA		// Comprobamos que se presiona pb1, sí: suma, no: ignora
 	SBIS	PINB, 1
-	CALL	RESTA	// Comprobamos que se presiona pb2, sí: resta, no: ignora
+	CALL	RESTA		// Comprobamos que se presiona pb2, sí: resta, no: ignora
 
-
+// Timer es solamente una etiqueta que usé para poder alternar entre la suma con tiempo y la verificación de los botones
 TIMER:
 	// Timer0 con sumador cada segundo
 	IN		R16, TIFR0	// Se lee la bandera del registro de interrupción
 	SBRS	R16, TOV0	// Se verifica que la bandera de overflow está encendida
-	RJMP	MAIN		// Si está apagada la bandera, regresa al inicio del loop
+	RJMP	MAIN		// Si está apagada la bandera, regresa al inicio del loop (MAIN)
 	SBI		TIFR0, TOV0	// Si está encendida la bandera, salta a apagarla
 	LDI		R16, 158
-	OUT		TCNT0, R16	// Se vuelve a cargar un valor inicial a Timer0
-	INC		R17
+	OUT		TCNT0, R16	// Se vuelve a cargar un valor inicial a Timer0 
+	INC		R17			// Incrementa cada 100ms
 	CPI		R17, 10		// Se compara con 10 para verificar si pasó 1 seg
 	BRNE	MAIN		// Si no ha pasado 1 seg regresa a MAIN
 	CLR		R17			// Si ya pasó 1 seg limpia el registro del contador de reloj
 	CALL	SUMA_T
+	CALL	COMPARE		// Se hacen las subrutinas de suma y comparación de igualdad
 	RJMP	MAIN
 
 
@@ -116,41 +119,49 @@ INICIAR_DISP:	// Se modifica la dirección a la que apunta Z a la primera de la l
 	RET
 
 SUMA: // Se realiza la suma en R20 como sub-rutina
-	ADIW	Z, 1
+	ADIW	Z, 1		// Se le suma 1 al valor al que apunta Z
 	INC		R20
 	CPI		R20, 0x10	// Le sumamos 1 a R20 y comparamos si hay overflow
 	BREQ	OVERFLOW	// Si hay overflow, reinicia el sumador
 	LPM		R16, Z
-	OUT		PORTD, R16
+	OUT		PORTD, R16	// Sacamos el valor guardado en Z a PORTD
 	RET
 OVERFLOW:
 	LDI		R20, 0x00	// Si hay overflow, hacemos reset al registro R20
-	CALL	INICIAR_DISP	
+	CALL	INICIAR_DISP	// Se llama a la subrutina que reinicia el puntero de Z
 	RET
 
 RESTA: // Se realiza la resta en R20 como sub-rutina
-	SBIW	Z, 1
+	SBIW	Z, 1		// Se le resta 1 al valor al que apunta Z
 	DEC		R20
 	CPI		R20, 0xFF	// Le restamos 1 a R20 y comparamos si hay underflow
-	BREQ	UNDERFLOW		// Si hay underflow, setea el sumador
+	BREQ	UNDERFLOW	// Si hay underflow, setea el sumador
 	LPM		R16, Z
-	OUT		PORTD, R16
+	OUT		PORTD, R16	// Sacamos el valor guardado en Z a PORTD
 	RET
 UNDERFLOW:
 	LDI		R20, 0x0F	// Si hay underflow, dejamos en reset al registro R20
-	CALL	INICIAR_DISP
-	ADIW	Z, 15
+	CALL	INICIAR_DISP	// Se llama a la subrutina que reinicia el puntero de Z
+	ADIW	Z, 15		// Se le carga al puntero la última dirección donde se guarda un valor en la lista
 	LPM		R16, Z
-	OUT		PORTD, R16
+	OUT		PORTD, R16	// Sacamos el valor guardado en Z a PORTD
 	RET
 
-SUMA_T:
-	INC		R21
-	CPI		R21, 0x10
+SUMA_T:	// Se suma el contador que lleva el timer0
+	INC		R21			// Se suma 1 al contador
+	CPI		R21, 0x10	// Se verifica si hay overflow
 	BREQ	OVERFLOW_T
-	OUT		PORTC, R21
+	OUT		PORTC, R21	// Si no hay overflow se saca el valor a PORTC
 	RET
 OVERFLOW_T:
 	LDI		R21, 0x00
-	OUT		PORTC, R21
+	OUT		PORTC, R21	// Si hay overflow se regresa e valor a 0 y se saca a PORTC
 	RET
+
+COMPARE:
+	CP		R20, R21	// Se compara su R20 y R21 son iguales
+	BREQ	IGUAL		// Si son iguales salta a IGUAL
+	RET					// Si no son iguales regresa al call de donde se llamó la sub-rutina
+IGUAL:
+	SBI     PINB, PB5	// Si son iguales se hace toggle al led del PINB
+    RET
