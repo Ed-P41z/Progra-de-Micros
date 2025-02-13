@@ -95,7 +95,7 @@ TIMER:
 INIT_TMR0:
 	LDI		R16, (1 << CS02) | (1 << CS00)
 	OUT		TCCR0B, R16	// Setear prescaler del TIMER 0 a 64
-	LDI		R16, 100
+	LDI		R16, 158
 	OUT		TCNT0, R16	// Cargar valor inicial en TCNT0
 	RET
 
