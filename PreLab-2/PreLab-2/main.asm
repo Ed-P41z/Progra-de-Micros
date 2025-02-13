@@ -25,78 +25,80 @@ SETUP:
 	STS		CLKPR, R16	// Se habilita el cambio del prescaler
 	LDI		R16, 0x04
 	STS		CLKPR, R16	// Se configura el prescaler a 1MHz
-	//CALL	INIT_TMR0	// Se inicia el timer 0 (es el timer que usaré)
+	CALL	INIT_TMR0	// Se inicia el timer 0 (es el timer que usaré)
 
 	// Desabilitar el serial
 	LDI R16, 0x00
 	STS UCSR0B, R16
 
 	// Se configuran pines de entrada y salida (DDRx, PORTx, PINx)
-	// Se configura PORTD como salida inicialmente apagado
+	// Se configura PORTD y PORTC como salida inicialmente apagado
 	LDI		R16, 0xFF
 	OUT		DDRD, R16	// Se configura el puerto D como salida
+	OUT		DDRC, R16	// Se configura el puerto D como salida
 	LDI		R16, 0x00
-	OUT		PORTD, R16	// Se configuran los pines para estar inicialmente apagados
+	OUT		PORTD, R16	
+	OUT		PORTC, R16	// Se configuran los pines para estar inicialmente apagados
 
 	LDI		R17, 0x00	// Variable para guardar estado de contador de reloj
 	LDI		R18, 0x00	// Variable para guardar estado de Leds
 
 	// Se configura PORTB como entrada con pull-up habilitado
-	LDI		R16, 0x00
-	OUT		DDRB, R16	// Se configura el puerto B como entrada
-	LDI		R16, 0xFF
+	LDI		R16, 0x20
+	OUT		DDRB, R16	// Se configura el puerto B como entrada y un bit como salida
+	LDI		R16, 0xDF
 	OUT		PORTB, R16	// Se configuran los pines con pull-up activado
 
-	LDI		R17, 0xFF	// Variable para guardar estado de botones
-	LDI		R20, 0x00	// Variable para guardar estado de Leds contador 1
+	LDI		R20, 0x00	// Variable para guardar estado de Leds contador
+	LDI		R21, 0x00	// Variable para guardar estado de Leds timer
+	LDI		R22, 0xFF	// Variable para guardar estado de botones
 
 	CALL	INICIAR_DISP
 
-	
 // Loop infinito
 MAIN:
-	// Código PreLab
-	/*IN		R16, TIFR0	// Se lee la bandera del registro de interrupción
-	SBRS	R16, TOV0	// Se verifica que la bandera de overflow está encendida
-	RJMP	MAIN		// Si está apagada la bandera, regresa al inicio del loop
-	SBI		TIFR0, TOV0	// Si está encendida la bandera, salta a apagarla
-	LDI		R16, 100
-	OUT		TCNT0, R16	// Se vuelve a cargar un valor inicial a Timer0
-	INC		R17
-	CPI		R17, 10		// Se compara con 10 para verificar si pasaron 100ms
-	BRNE	MAIN		// Si no han pasado 100ms regresa a MAIN
-	CLR		R17			// Si ya pasaron 100ms limpia el registro del contador de reloj
-	*/
-	
+	// Anti-Rebotes y sumador del display
 	IN		R16, PINB	// Se guarda el estado de PORTB en R16
-	CP		R17, R16	// Compara el estado anterior con el estado actual del pb
-	BREQ	MAIN		// Si es el mismo estado repite los dos pasos anteriores
+	CP		R22, R16	// Compara el estado anterior con el estado actual del pb
+	BREQ	TIMER		// Si es el mismo estado repite los dos pasos anteriores
 	CALL	DELAY
 	IN		R16, PINB	// Lee nuevamente R16 para ver si no fue un error de lectura
-	CP		R17, R16
-	BREQ	MAIN		// Si fue un error de lectura regresa a MAIN
-	MOV		R17, R16	// Guardamos el valor de la lectura anterior en R17
+	CP		R22, R16
+	BREQ	TIMER		// Si fue un error de lectura regresa a MAIN
+	MOV		R22, R16	// Guardamos el valor de la lectura anterior en R22
 	SBIS	PINB, 0		
 	CALL	SUMA		// Comprobamos que se presiona pb1, sí: suma, no: ignora
 	SBIS	PINB, 1
 	CALL	RESTA	// Comprobamos que se presiona pb2, sí: resta, no: ignora
+
+
+TIMER:
+	// Timer0 con sumador cada segundo
+	IN		R16, TIFR0	// Se lee la bandera del registro de interrupción
+	SBRS	R16, TOV0	// Se verifica que la bandera de overflow está encendida
+	RJMP	MAIN		// Si está apagada la bandera, regresa al inicio del loop
+	SBI		TIFR0, TOV0	// Si está encendida la bandera, salta a apagarla
+	LDI		R16, 158
+	OUT		TCNT0, R16	// Se vuelve a cargar un valor inicial a Timer0
+	INC		R17
+	CPI		R17, 10		// Se compara con 10 para verificar si pasó 1 seg
+	BRNE	MAIN		// Si no ha pasado 1 seg regresa a MAIN
+	CLR		R17			// Si ya pasó 1 seg limpia el registro del contador de reloj
+	CALL	SUMA_T
 	RJMP	MAIN
-	
 
 
 // Sub-rutina (no de interrupcion)
-/*
 INIT_TMR0:
-	LDI		R16, (1<<CS01) | (1<<CS00)
+	LDI		R16, (1 << CS02) | (1 << CS00)
 	OUT		TCCR0B, R16	// Setear prescaler del TIMER 0 a 64
 	LDI		R16, 100
 	OUT		TCNT0, R16	// Cargar valor inicial en TCNT0
 	RET
-	*/
 
 DELAY: // Se realiza un delay como medida antirrebote
 	LDI		R18, 0xFF
-	LDI		R19, 0x04	// Cargamos los valores necesarios a dos registros
+	LDI		R19, 0x01	// Cargamos los valores necesarios a dos registros
 SUB_DELAY:
 	DEC		R18
 	CPI		R18, 0		
@@ -106,11 +108,11 @@ SUB_DELAY:
 	BRNE	SUB_DELAY
 	RET					// Al llegar R19 a 0 regresa a MAIN: CALL
 
-INICIAR_DISP:
-	LDI		ZL, LOW(Disp_Hex << 1)
-	LDI		ZH, HIGH(Disp_Hex << 1)
-	LPM		R16, Z
-	OUT		PORTD, R16
+INICIAR_DISP:	// Se modifica la dirección a la que apunta Z a la primera de la lista
+	LDI		ZL, LOW(Disp_Hex << 1)	
+	LDI		ZH, HIGH(Disp_Hex << 1)	// Se apunta a la primera dirección de Z
+	LPM		R16, Z	// Se carga el valor guardado en la primera dirección
+	OUT		PORTD, R16	// Se saca a PORTD el primer valor al que apunta Z
 	RET
 
 SUMA: // Se realiza la suma en R20 como sub-rutina
@@ -140,4 +142,15 @@ UNDERFLOW:
 	ADIW	Z, 15
 	LPM		R16, Z
 	OUT		PORTD, R16
+	RET
+
+SUMA_T:
+	INC		R21
+	CPI		R21, 0x10
+	BREQ	OVERFLOW_T
+	OUT		PORTC, R21
+	RET
+OVERFLOW_T:
+	LDI		R21, 0x00
+	OUT		PORTC, R21
 	RET
