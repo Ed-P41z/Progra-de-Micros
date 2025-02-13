@@ -164,4 +164,6 @@ COMPARE:
 	RET					// Si no son iguales regresa al call de donde se llamó la sub-rutina
 IGUAL:
 	SBI     PINB, PB5	// Si son iguales se hace toggle al led del PINB
+	LDI		R21, 0x00
+	OUT		PORTC, R21	// Se reinicia el estado de los LEDS
     RET
