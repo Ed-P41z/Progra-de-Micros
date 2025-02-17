@@ -99,22 +99,22 @@ SUMA:
 	INC		R20
 	CPI		R20, 0x10	// Le sumamos 1 a R20 y comparamos si hay overflow
 	BREQ	OVERFLOW	// Si hay overflow, reinicia el sumador
-	OUT		PORTD, R20	// Sacamos el valor guardado en R20 a PORTD
-	RET
+	OUT		PORTC, R20	// Sacamos el valor guardado en R20 a PORTD
+	RETI
 OVERFLOW:
 	LDI		R20, 0x00	// Si hay overflow, hacemos reset al registro R20
-	OUT		PORTD, R20	// Sacamos el valor guardado en R20 a PORTD
+	OUT		PORTC, R20	// Sacamos el valor guardado en R20 a PORTD
 	RETI
 
 RESTA:
 	DEC		R20
 	CPI		R20, 0xFF	// Le restamos 1 a R20 y comparamos si hay underflow
 	BREQ	UNDERFLOW	// Si hay underflow, setea el sumador
-	OUT		PORTD, R20	// Sacamos el valor guardado en r20 a PORTD
-	RET
+	OUT		PORTC, R20	// Sacamos el valor guardado en r20 a PORTD
+	RETI
 UNDERFLOW:
 	LDI		R20, 0x0F	// Si hay underflow, dejamos en reset al registro R20
-	OUT		PORTD, R20	// Sacamos el valor guardado en R20 a PORTD
+	OUT		PORTC, R20	// Sacamos el valor guardado en R20 a PORTD
 	RETI
 
 
