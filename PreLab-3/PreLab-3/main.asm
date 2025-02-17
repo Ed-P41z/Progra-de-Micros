@@ -12,8 +12,8 @@
 .org	0x0000
 	JMP		SETUP
 
-.org	PCINT0
-	JMP		PBREAD//SUBRUTINA SUMA O RESTA
+.org	0x0006
+	JMP		PBREAD		//Sub-rutina cuando se presiones los botones
 
 
 SETUP:
@@ -39,6 +39,8 @@ SETUP:
 
 	// Se habilitan las interrupciones de Pin Change 0
 	LDI		R16, (1 << PCIE0)
+	STS		PCICR, R16
+	LDI		R16, (1 << PCINT0) | (1 << PCINT1)
 	STS		PCMSK0, R16
 
 	// Se configuran pines de entrada y salida (DDRx, PORTx, PINx)
@@ -54,12 +56,11 @@ SETUP:
 
 	// Se configura PORTB como entrada con pull-up habilitado
 	LDI		R16, 0x00
-	OUT		DDRB, R16	// Se configura el puerto B como entrada y un bit como salida
-	SBI		DDRB, PB5
+	OUT		DDRB, R16	// Se configura el puerto B como entrada
 	LDI		R16, 0xFF
 	OUT		PORTB, R16	// Se configuran los pines con pull-up activado
-	CBI		PORTB, PB5	// El bit está inicialmente apagado
 
+	LDI		R17, 0xFF	// Variable para guardar estado de los botones
 	LDI		R20, 0x00	// Variable para guardar estado de Leds contador
 	
 	SEI					// Habilitamos las interrupciones globales nuevamente
@@ -72,7 +73,7 @@ MAIN:
 // Sub-rutina (no de interrupcion)
 INIT_TMR0:
 	LDI		R16, (1 << CS02) | (1 << CS00)
-	OUT		TCCR0B, R16	// Setear prescaler del TIMER 0 a 64
+	OUT		TCCR0B, R16	// Setear prescaler del TIMER0 a 64
 	LDI		R16, 158
 	OUT		TCNT0, R16	// Cargar valor inicial en TCNT0
 	RET
@@ -80,7 +81,24 @@ INIT_TMR0:
 // Sub-rutina de interrupcion
 
 PBREAD:
-	
+	// Esta es la medida antirebote utilizando el Timer0
+	IN		R16, TIFR0	// Se lee la bandera del registro de interrupción
+	SBRS	R16, TOV0	// Se verifica que la bandera de overflow está encendida
+	RJMP	MAIN		// Si está apagada la bandera, regresa al inicio del loop (MAIN)
+	SBI		TIFR0, TOV0	// Si está encendida la bandera, salta a apagarla
+	LDI		R16, 158
+	OUT		TCNT0, R16	// Se vuelve a cargar un valor inicial a Timer0 
+	IN		R16, PINB	// Se guarda el estado de PORTB en R16
+	SBIS	PINB, PB0
+	RJMP	SUMA
+	SBIS	PINB, PB1
+	RJMP	RESTA
+	RETI
 
+SUMA:
+	RETI
+
+RESTA:
+	RETI
 
 
