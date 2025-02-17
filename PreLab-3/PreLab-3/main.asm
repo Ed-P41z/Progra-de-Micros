@@ -13,7 +13,7 @@
 	JMP		SETUP
 
 .org	0x0006
-	JMP		PBREAD		//Sub-rutina cuando se presiones los botones
+	JMP		PBREAD		//Sub-rutina de interrupción cuando se presiones los botones
 
 
 SETUP:
@@ -68,12 +68,12 @@ SETUP:
 // Loop infinito
 MAIN:
 	INC R19
- 	RJMP MAIN
+ 	RJMP MAIN	// Para mantener entretenido el main loop
 
 // Sub-rutina (no de interrupcion)
 INIT_TMR0:
 	LDI		R16, (1 << CS02) | (1 << CS00)
-	OUT		TCCR0B, R16	// Setear prescaler del TIMER0 a 64
+	OUT		TCCR0B, R16	// Setear prescaler del TIMER0 a 1024
 	LDI		R16, 158
 	OUT		TCNT0, R16	// Cargar valor inicial en TCNT0
 	RET
@@ -90,9 +90,9 @@ PBREAD:
 	OUT		TCNT0, R16	// Se vuelve a cargar un valor inicial a Timer0 
 	IN		R16, PINB	// Se guarda el estado de PORTB en R16
 	SBIS	PINB, PB0
-	RJMP	SUMA
+	RJMP	SUMA		// En caso que se presione pb0: Suma, no: Salta
 	SBIS	PINB, PB1
-	RJMP	RESTA
+	RJMP	RESTA		// En caso que se presione pb1: Resta, no: Salta
 	RETI
 
 SUMA:
