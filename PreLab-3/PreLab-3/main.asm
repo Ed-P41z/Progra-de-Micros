@@ -68,7 +68,7 @@ SETUP:
 // Loop infinito
 MAIN:
 	INC R19
-	RJMP MAIN
+ 	RJMP MAIN
 
 // Sub-rutina (no de interrupcion)
 INIT_TMR0:
@@ -84,7 +84,7 @@ PBREAD:
 	// Esta es la medida antirebote utilizando el Timer0
 	IN		R16, TIFR0	// Se lee la bandera del registro de interrupción
 	SBRS	R16, TOV0	// Se verifica que la bandera de overflow está encendida
-	RJMP	MAIN		// Si está apagada la bandera, regresa al inicio del loop (MAIN)
+	RJMP	PBREAD		// Si está apagada la bandera, regresa al inicio del loop (MAIN)
 	SBI		TIFR0, TOV0	// Si está encendida la bandera, salta a apagarla
 	LDI		R16, 158
 	OUT		TCNT0, R16	// Se vuelve a cargar un valor inicial a Timer0 
@@ -96,9 +96,25 @@ PBREAD:
 	RETI
 
 SUMA:
+	INC		R20
+	CPI		R20, 0x10	// Le sumamos 1 a R20 y comparamos si hay overflow
+	BREQ	OVERFLOW	// Si hay overflow, reinicia el sumador
+	OUT		PORTD, R20	// Sacamos el valor guardado en R20 a PORTD
+	RET
+OVERFLOW:
+	LDI		R20, 0x00	// Si hay overflow, hacemos reset al registro R20
+	OUT		PORTD, R20	// Sacamos el valor guardado en R20 a PORTD
 	RETI
 
 RESTA:
+	DEC		R20
+	CPI		R20, 0xFF	// Le restamos 1 a R20 y comparamos si hay underflow
+	BREQ	UNDERFLOW	// Si hay underflow, setea el sumador
+	OUT		PORTD, R20	// Sacamos el valor guardado en r20 a PORTD
+	RET
+UNDERFLOW:
+	LDI		R20, 0x0F	// Si hay underflow, dejamos en reset al registro R20
+	OUT		PORTD, R20	// Sacamos el valor guardado en R20 a PORTD
 	RETI
 
 
