@@ -89,11 +89,17 @@ PBREAD:
 	LDI		R16, 158
 	OUT		TCNT0, R16	// Se vuelve a cargar un valor inicial a Timer0 
 	IN		R16, PINB	// Se guarda el estado de PORTB en R16
+	CP		R16, R17
+	BREQ	NOT_EQ		// Compara el estado anterior y el estado actual y verifica si son iguales
+	MOV		R17, R16	// Si son iguales guarda el estado de los botones
 	SBIS	PINB, PB0
 	RJMP	SUMA		// En caso que se presione pb0: Suma, no: Salta
 	SBIS	PINB, PB1
 	RJMP	RESTA		// En caso que se presione pb1: Resta, no: Salta
 	RETI
+
+NOT_EQ:
+	RETI				// Si el estado es igual entonces sale de la sub-rutina
 
 SUMA:
 	INC		R20
