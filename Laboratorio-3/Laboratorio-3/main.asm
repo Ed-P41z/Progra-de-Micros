@@ -4,7 +4,7 @@
 *	Autor: Edvin Paiz
 *	Descripción: El prelab 3 consiste en un sumador usando interrupciones
 */
-
+/*---------------------------------------------------------------------------------------------------*/
 .include "M328PDEF.inc"
 
 .cseg
@@ -17,7 +17,7 @@
 .org	0x0020
 	JMP		TMR0_OV		//Sub-rutina de interrupción cuando hay overflow en el timer0
 
-
+/*---------------------------------------------------------------------------------------------------*/
 SETUP:
 	// Se apagan las interrupciones globales
 	CLI
@@ -64,25 +64,30 @@ SETUP:
 
 
 	// Se configura PORTB como entrada con pull-up habilitado
-	LDI		R16, 0x00
-	OUT		DDRB, R16	// Se configura el puerto B como entrada
+	LDI		R16, 0x0C
+	OUT		DDRB, R16	// Se configura el puerto B como entrada y pb2-pb3 como salida
 	LDI		R16, 0xFF
 	OUT		PORTB, R16	// Se configuran los pines con pull-up activado
+	SBI		PORTB, PB3	// Se configura pb2 inicialmente encendido y pb3 inicialmente apagado
 
 	LDI		R17, 0x00	// Variable para guardar estado de contador de reloj
 	LDI		R18, 0x00	// Variable para guardar estado de Leds
 	LDI		R19, 0xFF	// Variable para guardar estado de botones
 	LDI		R20, 0x00	// Variable para guardar contador 1
 	LDI		R21, 0x00	// Variable para guardar contador 2
+	LDI		R22, 0x00	// Variable para guardar contador 3
+	LDI		R23, 0x00	// Variable parar guardar estado transistores
 
 	CALL	INICIAR_DISP// Se inicia el display donde se mostrará el contador
 	
 	SEI					// Habilitamos las interrupciones globales nuevamente
 
+/*---------------------------------------------------------------------------------------------------*/
 MAIN:
  	RJMP MAIN	// Para mantener entretenido el main loop
 
-	// Sub-rutina (no de interrupcion)
+/*---------------------------------------------------------------------------------------------------*/
+// Sub-rutina (no de interrupcion)
 INIT_TMR0:
 	LDI		R16, (1 << CS01) | (1 << CS00)
 	OUT		TCCR0B, R16	// Setear prescaler del TIMER0 a 64
@@ -97,6 +102,7 @@ INICIAR_DISP:	// Se modifica la dirección a la que apunta Z a la primera de la l
 	OUT		PORTD, R16	// Se saca a PORTD el primer valor al que apunta Z
 	RET
 
+/*---------------------------------------------------------------------------------------------------*/
 // Sub-rutina de interrupcion
 TMR0_OV:
 	SBI		TIFR0, TOV0	// Si está encendida la bandera de overflow, salta a apagarla
@@ -109,20 +115,53 @@ TMR0_OV:
 	RETI
 
 NOT_1S:
+	LDI		ZL, LOW(Disp_Hex << 1)	
+	LDI		ZH, HIGH(Disp_Hex << 1)	// Se apunta a la primera dirección de Z
+	LPM		R16, Z		// Se carga el valor guardado en la primera dirección
+	LDI		R16, 0x00
+	CPI		R23, 0x00
+	BREQ	TR1
+	CPI		R23, 0x01
+	BREQ	WAIT
+	CPI		R23, 0x02
+	BREQ	TR2
+TR1:
+	ADIW	Z, 1
+	INC		R16
+	CP		R16, R20
+	BRNE	TR1
+	SBI		PORTB, PB2
+	SBI		PORTB, PB3
+	LPM		R16, Z
+	OUT		PORTD, R16
+	LDI		R23, 0x01
+	RETI
+WAIT:
+	LDI		R23, 0x02
 	RETI
 
-SUMA: // Se realiza la suma en R20 como sub-rutina
-	ADIW	Z, 1		// Se le suma 1 al valor al que apunta Z
+TR2:
+	ADIW	Z, 1
+	INC		R16
+	CP		R16, R22
+	BRNE	TR2
+	SBI		PORTB, PB2
+	SBI		PORTB, PB3
+	LPM		R16, Z
+	OUT		PORTD, R16
+	LDI		R23, 0x00
+	RETI
+
+SUMA: 
 	INC		R20
 	CPI		R20, 0x0A	// Le sumamos 1 a R20 y comparamos si hay overflow
 	BREQ	OVERFLOW	// Si hay overflow, reinicia el sumador
 	LPM		R16, Z
-	OUT		PORTD, R16	// Sacamos el valor guardado en Z a PORTD
 	LDI		R17, 0
 	RETI
 OVERFLOW:
 	LDI		R20, 0x00	// Si hay overflow, hacemos reset al registro R20
-	CALL	INICIAR_DISP	// Se llama a la subrutina que reinicia el puntero de Z
+	INC		R22
 	LDI		R17, 0
 	RETI
 
