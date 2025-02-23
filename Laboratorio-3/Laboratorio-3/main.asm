@@ -115,41 +115,31 @@ TMR0_OV:
 	RETI
 
 NOT_1S:
+	CPI		R23, 0x00	
+	BREQ	TR1			// Se verifica el estado de R23 y se salta a TR1 si es 0x00
+	CPI		R23, 0x01
+	BREQ	TR2			// Se verifica el estado de R23 y se salta a TR2 si es 0x01
+
+TR1:
 	LDI		ZL, LOW(Disp_Hex << 1)	
 	LDI		ZH, HIGH(Disp_Hex << 1)	// Se apunta a la primera dirección de Z
-	LPM		R16, Z		// Se carga el valor guardado en la primera dirección
-	LDI		R16, 0x00
-	CPI		R23, 0x00
-	BREQ	TR1
-	CPI		R23, 0x01
-	BREQ	WAIT
-	CPI		R23, 0x02
-	BREQ	TR2
-TR1:
-	ADIW	Z, 1
-	INC		R16
-	CP		R16, R20
-	BRNE	TR1
-	SBI		PORTB, PB2
-	SBI		PORTB, PB3
-	LPM		R16, Z
-	OUT		PORTD, R16
-	LDI		R23, 0x01
-	RETI
-WAIT:
-	LDI		R23, 0x02
+	ADD		ZL, R20		// Se carga a Z Low el valor de R20 por medio de Suma ZL=0
+	LPM		R16, Z		// Se carga el valor guardado en la dirección de Z
+	OUT		PORTD, R16	// Se saca a PORTD el valor de que estaba guardado en la dirección de Z
+	CBI		PORTB, PB2
+	SBI		PORTB, PB3	// Se habilitan los transistores para sacar solamente el valor a un disp
+	LDI		R23, 0x01	// Se cambia el valor de R23 para que cambie de estado para el siguiente siclo.
 	RETI
 
 TR2:
-	ADIW	Z, 1
-	INC		R16
-	CP		R16, R22
-	BRNE	TR2
+	LDI		ZL, LOW(Disp_Hex << 1)	
+	LDI		ZH, HIGH(Disp_Hex << 1)	// Se apunta a la primera dirección de Z
+	ADD		ZL, R22		// Se carga a Z Low el valor de R22 por medio de Suma ZL=0
+	LPM		R16, Z		// Se carga el valor guardado en la dirección de Z
+	OUT		PORTD, R16	// Se saca a PORTD el valor de que estaba guardado en la dirección de Z+
 	SBI		PORTB, PB2
-	SBI		PORTB, PB3
-	LPM		R16, Z
-	OUT		PORTD, R16
-	LDI		R23, 0x00
+	CBI		PORTB, PB3	// Se habilitan los transistores para sacar solamente el valor a un disp
+	LDI		R23, 0x03	// Se cambia el valor de R23 para que cambie de estado para el siguiente siclo.
 	RETI
 
 SUMA: 
