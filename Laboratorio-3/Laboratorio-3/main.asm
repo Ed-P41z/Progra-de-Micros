@@ -145,14 +145,21 @@ TR2:
 SUMA: 
 	INC		R20
 	CPI		R20, 0x0A	// Le sumamos 1 a R20 y comparamos si hay overflow
-	BREQ	OVERFLOW	// Si hay overflow, reinicia el sumador
+	BREQ	OVERFLOW_10S	// Si llega a 10s, reinicia las unidades y le suma uno a las decenas
 	LPM		R16, Z
-	LDI		R17, 0
+	LDI		R17, 0		// Se reinicia el contador para el timer
 	RETI
-OVERFLOW:
+OVERFLOW_10S:
 	LDI		R20, 0x00	// Si hay overflow, hacemos reset al registro R20
 	INC		R22
-	LDI		R17, 0
+	CPI		R22, 0x06
+	BREQ	OVERFLOW_60S	// Si llega a 60s, reinicia las decenas y unidades.
+	LDI		R17, 0		// Se reinicia el contador para el timer
+	RETI
+OVERFLOW_60S:
+	LDI		R20, 0x00
+	LDI		R22, 0x00	// Se reinicia el contador completo
+	LDI		R17, 0		// Se reinicia el contador para el timer
 	RETI
 
 PBREAD:
