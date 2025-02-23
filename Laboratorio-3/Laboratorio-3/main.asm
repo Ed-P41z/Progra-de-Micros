@@ -91,7 +91,7 @@ MAIN:
 INIT_TMR0:
 	LDI		R16, (1 << CS01) | (1 << CS00)
 	OUT		TCCR0B, R16	// Setear prescaler del TIMER0 a 64
-	LDI		R16, 100
+	LDI		R16, 178
 	OUT		TCNT0, R16	// Cargar valor inicial en TCNT0
 	RET
 
@@ -106,10 +106,10 @@ INICIAR_DISP:	// Se modifica la dirección a la que apunta Z a la primera de la l
 // Sub-rutina de interrupcion
 TMR0_OV:
 	SBI		TIFR0, TOV0	// Si está encendida la bandera de overflow, salta a apagarla
-	LDI		R16, 100
+	LDI		R16, 178
 	OUT		TCNT0, R16	// Se vuelve a cargar un valor inicial a Timer0 
-	INC		R17			// Incrementa cada 10ms
-	CPI		R17, 100	// Se compara con 100 para verificar si pasó 1 seg
+	INC		R17			// Incrementa cada 5ms
+	CPI		R17, 200	// Se compara con 200 para verificar si pasó 1 seg
 	BRNE	NOT_1S		// Si no ha pasado 1 seg regresa a MAIN
 	BREQ	SUMA
 	RETI
