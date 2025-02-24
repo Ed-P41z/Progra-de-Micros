@@ -1,8 +1,11 @@
-Link al repositorio en GitHub
-https://github.com/Ed-P41z/Progra-de-Micros
+Link al repositorio en GitHub:
+-	https://github.com/Ed-P41z/Progra-de-Micros
 
 Video Explicativo Laboratorio 1:
-https://youtu.be/PVPnFqjBvnU?feature=shared
+-	https://youtu.be/gLaTv11eZps
 
 Video Explicativo Laboratorio 2:
-https://youtu.be/AAFJ_7X-QVY
+-	https://youtu.be/QPGepGfMCoo
+
+Video Explicativo Laboratorio 3:
+-	https://youtu.be/8P7YCvf77IA
