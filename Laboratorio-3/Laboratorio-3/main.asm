@@ -139,7 +139,7 @@ TR2:
 	OUT		PORTD, R16	// Se saca a PORTD el valor de que estaba guardado en la dirección de Z+
 	SBI		PORTB, PB2
 	CBI		PORTB, PB3	// Se habilitan los transistores para sacar solamente el valor a un disp
-	LDI		R23, 0x03	// Se cambia el valor de R23 para que cambie de estado para el siguiente siclo.
+	LDI		R23, 0x00	// Se cambia el valor de R23 para que cambie de estado para el siguiente siclo.
 	RETI
 
 SUMA: 
