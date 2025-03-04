@@ -6,17 +6,20 @@
 */
 /*---------------------------------------------------------------------------------------------------*/
 
-include "M328PDEF.inc"
+.include "M328PDEF.inc"
 
 .cseg
 .org	0x0000
 	JMP		SETUP
 
-.org	0x0006
-	JMP		PBREAD		//Sub-rutina de interrupción cuando se presiones los botones
+.org	PCI0addr
+	JMP		PBREAD		//Sub-rutina de interrupción cuando se presionen los botones
 
-.org	0x0020
+.org	OVF0addr
 	JMP		TMR0_OV		//Sub-rutina de interrupción cuando hay overflow en el timer0
+
+.org	OVF2addr
+	JMP		TMR0_1V		//Sub-rutina de interrupción cuando hay overflow en el timer0
 
 /*---------------------------------------------------------------------------------------------------*/
 SETUP:
@@ -25,6 +28,8 @@ SETUP:
 
 	// Lista de valores para mostrar números en el display
 	Disp_Hex:	.DB 0x3F, 0x06, 0x5B, 0x4F, 0x66, 0x6D, 0x7D, 0x07, 0x7F, 0x6F
+	//				 0		1	 2	   3	 4	   5	 6	   7	 8	   9
+	//Disp_Hex:	.DB 0x3F, 0x06, 0x5B, 0x4F, 0x66, 0x6D, 0x7D, 0x07, 0x7F, 0x6F
 	//				 0		1	 2	   3	 4	   5	 6	   7	 8	   9
 
 	// Se configura la pila
@@ -75,11 +80,16 @@ SETUP:
 	LDI		R17, 0x00	// Variable para guardar estado de contador de reloj TMR0
 	LDI		R18, 0x00	// Variable para guardar estado de Leds
 	LDI		R19, 0xFF	// Variable para guardar estado de botones
-	LDI		R20, 0x00	// Variable para guardar contador 1 (US)
-	LDI		R21, 0x00	// Variable para guardar contador 2	(DS)
-	LDI		R22, 0x00	// Variable para guardar contador 3 (UM)
-	LDI		R24, 0x00	// Variable para guardar contador 4	(DM)
+	LDI		R20, 0x00	// Variable para guardar contador 1 (UM)
+	LDI		R21, 0x00	// Variable para guardar contador 2	(DM)
+	LDI		R22, 0x00	// Variable para guardar contador 3 (UH)
+	LDI		R24, 0x00	// Variable para guardar contador 4	(DH)
+	LDI		R25, 0x00	// Variable para guardar contador 5	(UD)
+	LDI		R26, 0x00	// Variable para guardar contador 6	(DD)
+	LDI		R27, 0x00	// Variable para guardar contador 7	(UMS)
+	LDI		R28, 0x00	// Variable para guardar contador 8	(DMS)
 	LDI		R23, 0x00	// Variable parar guardar estado transistores
+	LDI		R29, 0x00	// Variable para guardar modo actual
 
 	CALL	INICIAR_DISP// Se inicia el display donde se mostrará el contador
 	
@@ -107,7 +117,6 @@ INIT_TMR1:
 
 INIT_TMR2:
 	LDI		R16, (1 << CS01) | (1 << CS00)
-	OUT		TCCR0B, R16	// Setear prescaler del TIMER0 a 64
 	LDI		R16, 178
 	OUT		TCNT0, R16	// Cargar valor inicial en TCNT0
 	RET
@@ -121,17 +130,15 @@ INICIAR_DISP:	// Se modifica la dirección a la que apunta Z a la primera de la l
 
 /*---------------------------------------------------------------------------------------------------*/
 // Sub-rutina de interrupcion
+// Sub-rutina de interrupcion para mostrar displays
 TMR0_OV:
+	PUSH	R16
+	IN		R16, SREG
+	PUSH	R16
+
 	SBI		TIFR0, TOV0	// Si está encendida la bandera de overflow, salta a apagarla
 	LDI		R16, 178
 	OUT		TCNT0, R16	// Se vuelve a cargar un valor inicial a Timer0 
-	INC		R17			// Incrementa cada 5ms
-	CPI		R17, 200	// Se compara con 200 para verificar si pasó 1 seg
-	BRNE	NOT_1S		// Si no ha pasado 1 seg regresa a MAIN
-	BREQ	SUMA
-	RETI
-
-NOT_1S:
 	CPI		R23, 0x00	
 	BREQ	TR1			// Se verifica el estado de R23 y se salta a TR1 si es 0x00
 	CPI		R23, 0x01
@@ -152,7 +159,7 @@ TR1:
 	CBI		PORTC, PC2
 	CBI		PORTC, PC3	// Se habilitan los transistores para sacar solamente el valor a un disp
 	LDI		R23, 0x01	// Se cambia el valor de R23 para que cambie de estado para el siguiente siclo.
-	RETI
+	RJMP	RETURN_T0
 
 TR2:
 	LDI		ZL, LOW(Disp_Hex << 1)	
@@ -165,7 +172,7 @@ TR2:
 	CBI		PORTC, PC2
 	CBI		PORTC, PC3	// Se habilitan los transistores para sacar solamente el valor a un disp
 	LDI		R23, 0x02	// Se cambia el valor de R23 para que cambie de estado para el siguiente siclo.
-	RETI
+	RJMP	RETURN_T0
 
 TR3:
 	LDI		ZL, LOW(Disp_Hex << 1)	
@@ -178,7 +185,7 @@ TR3:
 	SBI		PORTC, PC2
 	CBI		PORTC, PC3	// Se habilitan los transistores para sacar solamente el valor a un disp
 	LDI		R23, 0x03	// Se cambia el valor de R23 para que cambie de estado para el siguiente siclo.
-	RETI
+	RJMP	RETURN_T0
 
 TR4:
 	LDI		ZL, LOW(Disp_Hex << 1)	
@@ -191,47 +198,113 @@ TR4:
 	CBI		PORTC, PC2
 	SBI		PORTC, PC3	// Se habilitan los transistores para sacar solamente el valor a un disp
 	LDI		R23, 0x00	// Se cambia el valor de R23 para que cambie de estado para el siguiente siclo.
+	RJMP	RETURN_T0
+
+RETURN_T0:
+	POP		R16
+	OUT		SREG, R16
+	POP		R16
 	RETI
+
+// Sub-rutina de interrupcion para suma de tiempo de reloj
+TIMER_1V:
+	PUSH	R16
+	IN		R16, SREG
+	PUSH	R16
 
 SUMA: 
 	INC		R20
-	CPI		R20, 0x3C	// Le sumamos 1 a R20 y comparamos si hay overflow
-	BREQ	OVERFLOW_60S	// Si llega a 60s, reinicia las unidades y le suma uno a las decenas
+	CPI		R20, 0x0A	// Le sumamos 1 a R20 y comparamos si hay overflow
+	BREQ	OVERFLOW_10M	// Si llega a 10M, reinicia las unidades y le suma uno a las decenas
 	LPM		R16, Z
 	LDI		R17, 0		// Se reinicia el contador para el timer
-	RETI
-OVERFLOW_60S:
+	RJMP	RETURN_T0
+OVERFLOW_10M:
+	LDI		R20, 0x00	// Se reinicia el contador completo
+	INC		R21
+	CPI		R21, 0x06
+	BREQ	OVERFLOW_60M
+	LDI		R17, 0		// Se reinicia el contador para el timer
+	RJMP	RETURN_T0
+OVERFLOW_60M:
 	LDI		R20, 0x00
 	LDI		R21, 0x00	// Se reinicia el contador completo
 	INC		R22
+	CPI		R24, 0x02
+	BREQ	OVERFLOW_24H
 	CPI		R22, 0x0A
-	BREQ	OVERFLOW_10M
-	LDI		R17, 0		// Se reinicia el contador para el timer
-	RETI
-OVERFLOW_10M:
-	LDI		R20, 0x00
-	LDI		R21, 0x00
-	LDI		R22, 0x00	// Se reinicia el contador completo
-	INC		R23
-	CPI		R23, 0x06
-	BREQ	OVERFLOW_60M
-	LDI		R17, 0		// Se reinicia el contador para el timer
-	RETI
-OVERFLOW_60M:
-	LDI		R20, 0x00
-	LDI		R21, 0x00
-	LDI		R22, 0x00	// Se reinicia el contador completo
-	INC		R23
-	CPI		R23, 0x06
 	BREQ	OVERFLOW_10H
 	LDI		R17, 0		// Se reinicia el contador para el timer
-	RETI
+	RJMP	RETURN_T0
 OVERFLOW_10H:
 	LDI		R20, 0x00
 	LDI		R21, 0x00
 	LDI		R22, 0x00	// Se reinicia el contador completo
-	INC		R23
-	CPI		R23, 0x06
-	BREQ	OVERFLOW_60M
+	INC		R24
+	CPI		R24, 0x02
+	BREQ	OVERFLOW_20H
 	LDI		R17, 0		// Se reinicia el contador para el timer
+	RJMP	RETURN_T0
+OVERFLOW_20H:
+	LDI		R20, 0x00
+	LDI		R21, 0x00
+	LDI		R22, 0x00	// Se reinicia el contador completo
+	INC		R24
+	CPI		R24, 0x06
+	BREQ	OVERFLOW_24H
+	LDI		R17, 0		// Se reinicia el contador para el timer
+	RJMP	RETURN_T0
+OVERFLOW_24H:
+	LDI		R20, 0x00
+	LDI		R21, 0x00
+	LDI		R22, 0x00	
+	LDI		R24, 0x00	// Se reinicia el contador completo
+	BREQ	OVERFLOW_10D
+	LDI		R17, 0		// Se reinicia el contador para el timer
+	RJMP	RETURN_T0
+OVERFLOW_10D:
+
+
+RETURN_T1:
+	POP		R16
+	OUT		SREG, R16
+	POP		R16
+	RETI
+
+// Sub-rutina de interrupcion para detectar botones
+PBREAD:
+	PUSH	R16
+	IN		R16, SREG
+	PUSH	R16
+
+	IN		R16, PINB	// Se guarda el estado de PORTB en R16
+	SBIS	PINB, PB0
+	RJMP	SUMA_C2		// En caso que se presione pb0: Suma, no: Salta
+	SBIS	PINB, PB1
+	RJMP	RESTA		// En caso que se presione pb1: Resta, no: Salta
+	RJMP	RETURN_PB
+
+SUMA_C2:
+	INC		R29
+	CPI		R29, 0x10	// Le sumamos 1 a R20 y comparamos si hay overflow
+	BREQ	OVERFLOW_C2	// Si hay overflow, reinicia el sumador
+	RJMP	RETURN_PB
+OVERFLOW_C2:
+	LDI		R29, 0x00	// Si hay overflow, hacemos reset al registro R20
+	OUT		PORTC, R29	// Sacamos el valor guardado en R21 a PORTC
+	RJMP	RETURN_PB
+
+RESTA:
+	DEC		R29
+	CPI		R29, 0xFF	// Le restamos 1 a R20 y comparamos si hay underflow
+	BREQ	UNDERFLOW	// Si hay underflow, setea el sumador
+	RJMP	RETURN_PB
+UNDERFLOW:
+	LDI		R29, 0x0F	// Si hay underflow, dejamos en reset al registro R21
+	RJMP	RETURN_PB
+
+RETURN_PB:
+	POP		R16
+	OUT		SREG, R16
+	POP		R16
 	RETI
