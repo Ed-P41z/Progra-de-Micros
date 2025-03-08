@@ -8,11 +8,13 @@
 
 .include "M328PDEF.inc"
 
-.equ	T0VALUE		= 0x0000
-.equ	T1VALUE		= 0x0000
-.equ	T2VALUE		= 0x0000
+.equ	T0VALUE		= 0xFD
+.equ	T1HVALUE	= 0x1B//0xFF
+.equ	T1LVALUE	= 0x1E//0xFD
+.equ	T2VALUE		= 0x64
 .equ	MODES		= 8
 .def	COUNT_T0	= R17	// Registro que guarda el contador de Timer0
+.def	COUNT_T2	= R22	// Regritro que guarda el contador de Timer2
 .def	LEDMODE		= R18	// Registro que guarda el estado de los LEDS de modo
 .def	PBSTATE		= R19	// Registro que guarda el estado de los botones
 .def	TRDISP		= R20	// Registro que guarda el estado de los transistores
@@ -38,7 +40,10 @@ DMO:	.byte	1	// Espacio en RAM para guardar decenas de mes
 	JMP		PBREAD		//Sub-rutina de interrupción cuando se presionen los botones
 
 .org	OVF2addr
-	JMP		TMR0_1V		//Sub-rutina de interrupción cuando hay overflow en el timer0
+	JMP		TMR2_OV		//Sub-rutina de interrupción cuando hay overflow en el timer1
+
+.org	OVF1addr
+	JMP		TMR1_OV		//Sub-rutina de interrupción cuando hay overflow en el timer1
 
 .org	OVF0addr
 	JMP		TMR0_OV		//Sub-rutina de interrupción cuando hay overflow en el timer0
@@ -108,6 +113,17 @@ SETUP:
 	LDI		R16, 0xFF
 	OUT		PORTB, R16	// Se configuran los pines con pull-up activado
 
+	// Se inicializan las variables
+	LDI		R16, 0x00	// Se carga 0 a los espacios de la RAM donde se guarda la hora y fecha
+	STS		UMIN, R16 
+	STS		DMIN, R16
+	STS		UHRS, R16
+	STS		DHRS, R16
+	STS		DDAY, R16
+	STS		DMO, R16
+	LDI		R16, 0x01	// Se carga 1 únicamente a Unidades de día para que no empiecen en 0
+	STS		UDAY, R16
+	STS		UMO, R16
 	CLR		COUNT_T0	// Se coloca 0x00 a R17
 	CLR		LEDMODE		// Se coloca 0x00 a R18
 	LDI		PBSTATE, 0xFF	// Se coloca 0xFF a R19
@@ -144,56 +160,83 @@ MAIN:
 // Sub-rutina de modos
 HORA:
 	CPI		COUNT_T0, 0x00
-	BRBC	SREG_Z, +1
-	CALL	TR1_TIME
+	BREQ	U_MIN
+	CPI		COUNT_T0, 0x01
+	BREQ	D_MIN
+	CPI		COUNT_T0, 0x02
+	BREQ	U_HRS
+	CPI		COUNT_T0, 0x03
+	BREQ	D_HRS
+	RJMP	MAIN
 
-	RET
+U_MIN:
+	LDI		COUNT_T0, 0x01
+	CALL	TR1_TIME
+	RJMP	MAIN
+	
+D_MIN:
+	LDI		COUNT_T0, 0x02
+	CALL	TR2_TIME
+	RJMP	MAIN
+
+U_HRS:
+	LDI		COUNT_T0, 0x03
+	CALL	TR3_TIME
+	RJMP	MAIN
+
+D_HRS:
+	LDI		COUNT_T0, 0x00
+	CALL	TR4_TIME
+	RJMP	MAIN
+
 
 FECHA:
-	RET
+	RJMP	MAIN
 
 CONFIG_MIN:
-	RET
+	RJMP	MAIN
 
 CONFIG_HRS:
-	RET
+	RJMP	MAIN
 
 CONFIG_DAY:
-	RET
+	RJMP	MAIN
 
 CONFIG_MONTH:
-	RET
+	RJMP	MAIN
 
 CONFAL_MIN:
-	RET
+	RJMP	MAIN
 
 CONFAL_HRS:
-	RET
+	RJMP	MAIN
 
 ALARM_OFF:
-	RET
+	RJMP	MAIN
 
 /*---------------------------------------------------------------------------------------------------*/
 // Sub-rutina (no de interrupcion)
 INIT_TMR0:
-	LDI		R16, (1 << CS01) | (1 << CS00)
-	OUT		TCCR0B, R16	// Setear prescaler del TIMER0 a 64
-	LDI		R16, 178
+	LDI		R16, (1 << CS02) | (1 << CS00)
+	OUT		TCCR0B, R16	// Setear prescaler del TIMER0 a 1024
+	LDI		R16, T0VALUE
 	OUT		TCNT0, R16	// Cargar valor inicial en TCNT0
 	RET
 
 INIT_TMR1:
-	LDI		R16, (1 << CS11) | (1 << CS10)
-	OUT		TCCR0B, R16	// Setear prescaler del TIMER0 a 64
-	LDI		R16, 178
-	OUT		TCNT0, R16	// Cargar valor inicial en TCNT0
+	LDI		R16, (1 << CS12) | (1 << CS10)
+	STS		TCCR1B, R16	// Setear prescaler del TIMER1 a 1024
+	LDI		R16, T1HVALUE
+	STS		TCNT1H, R16	// Cargar valor inicial en TCNT1H
+	LDI		R16, T1LVALUE
+	STS		TCNT1L, R16 // Cargar valor inicial en TCNT1L
 	RET
 
 INIT_TMR2:
 	LDI		R16, (1 << CS22)
 	STS		TCCR2B, R16	// Setear prescaler del TIMER2 a 64
-	LDI		R16, 178
-	STS		TCNT2, R16	// Cargar valor inicial en TCNT0
+	LDI		R16, T2VALUE
+	STS		TCNT2, R16	// Cargar valor inicial en TCNT2
 	RET
 
 INICIAR_DISP:	// Se modifica la dirección a la que apunta Z a la primera de la lista
@@ -204,51 +247,59 @@ INICIAR_DISP:	// Se modifica la dirección a la que apunta Z a la primera de la l
 	RET
 
 TR1_TIME:
-	LDI		ZL, LOW(Disp_Hex << 1)	
-	LDI		ZH, HIGH(Disp_Hex << 1)	// Se apunta a la primera dirección de Z
-	ADD		ZL, R20		// Se carga a Z Low el valor de R20 por medio de Suma ZL=0
-	LPM		R16, Z		// Se carga el valor guardado en la dirección de Z
-	OUT		PORTD, R16	// Se saca a PORTD el valor de que estaba guardado en la dirección de Z
-	SBI		PORTC, PC0
+	CBI		PORTC, PC0
 	CBI		PORTC, PC1
 	CBI		PORTC, PC2
-	CBI		PORTC, PC3	// Se habilitan los transistores para sacar solamente el valor a un disp
+	CBI		PORTC, PC3
+	LDS		R16, UMIN
+	LDI		ZL, LOW(Disp_Hex << 1)	
+	LDI		ZH, HIGH(Disp_Hex << 1)	// Se apunta a la primera dirección de Z
+	ADD		ZL, R16		// Se carga a Z Low el valor de R20 por medio de Suma ZL=0
+	LPM		R16, Z		// Se carga el valor guardado en la dirección de Z
+	OUT		PORTD, R16	// Se saca a PORTD el valor de que estaba guardado en la dirección de Z
+	SBI		PORTC, PC3  // Se habilitan los transistores para sacar solamente el valor a un disp
 	RET
 
 TR2_TIME:
+	CBI		PORTC, PC0
+	CBI		PORTC, PC1
+	CBI		PORTC, PC2
+	CBI		PORTC, PC3
+	LDS		R16, DMIN
 	LDI		ZL, LOW(Disp_Hex << 1)	
 	LDI		ZH, HIGH(Disp_Hex << 1)	// Se apunta a la primera dirección de Z
-	ADD		ZL, R22		// Se carga a Z Low el valor de R22 por medio de Suma ZL=0
+	ADD		ZL, R16		// Se carga a Z Low el valor de R22 por medio de Suma ZL=0
 	LPM		R16, Z		// Se carga el valor guardado en la dirección de Z
 	OUT		PORTD, R16	// Se saca a PORTD el valor de que estaba guardado en la dirección de Z
-	CBI		PORTC, PC0
-	SBI		PORTC, PC1
-	CBI		PORTC, PC2
-	CBI		PORTC, PC3	// Se habilitan los transistores para sacar solamente el valor a un disp
+	SBI		PORTC, PC2	// Se habilitan los transistores para sacar solamente el valor a un disp
 	RET
 
 TR3_TIME:
-	LDI		ZL, LOW(Disp_Hex << 1)	
-	LDI		ZH, HIGH(Disp_Hex << 1)	// Se apunta a la primera dirección de Z
-	ADD		ZL, R22		// Se carga a Z Low el valor de R22 por medio de Suma ZL=0
-	LPM		R16, Z		// Se carga el valor guardado en la dirección de Z
-	OUT		PORTD, R16	// Se saca a PORTD el valor de que estaba guardado en la dirección de Z
-	CBI		PORTC, PC0
-	CBI		PORTC, PC1
-	SBI		PORTC, PC2
-	CBI		PORTC, PC3	// Se habilitan los transistores para sacar solamente el valor a un disp
-	RET
-
-TR4_TIME:
-	LDI		ZL, LOW(Disp_Hex << 1)	
-	LDI		ZH, HIGH(Disp_Hex << 1)	// Se apunta a la primera dirección de Z
-	ADD		ZL, R22		// Se carga a Z Low el valor de R22 por medio de Suma ZL=0
-	LPM		R16, Z		// Se carga el valor guardado en la dirección de Z
-	OUT		PORTD, R16	// Se saca a PORTD el valor de que estaba guardado en la dirección de Z
 	CBI		PORTC, PC0
 	CBI		PORTC, PC1
 	CBI		PORTC, PC2
-	SBI		PORTC, PC3	// Se habilitan los transistores para sacar solamente el valor a un disp
+	CBI		PORTC, PC3
+	LDS		R16, UHRS
+	LDI		ZL, LOW(Disp_Hex << 1)	
+	LDI		ZH, HIGH(Disp_Hex << 1)	// Se apunta a la primera dirección de Z
+	ADD		ZL, R16		// Se carga a Z Low el valor de R22 por medio de Suma ZL=0
+	LPM		R16, Z		// Se carga el valor guardado en la dirección de Z
+	OUT		PORTD, R16	// Se saca a PORTD el valor de que estaba guardado en la dirección de Z
+	SBI		PORTC, PC1	// Se habilitan los transistores para sacar solamente el valor a un disp
+	RET
+
+TR4_TIME:
+	CBI		PORTC, PC0
+	CBI		PORTC, PC1
+	CBI		PORTC, PC2
+	CBI		PORTC, PC3
+	LDS		R16, DHRS
+	LDI		ZL, LOW(Disp_Hex << 1)	
+	LDI		ZH, HIGH(Disp_Hex << 1)	// Se apunta a la primera dirección de Z
+	ADD		ZL, R16		// Se carga a Z Low el valor de R22 por medio de Suma ZL=0
+	LPM		R16, Z		// Se carga el valor guardado en la dirección de Z
+	OUT		PORTD, R16	// Se saca a PORTD el valor de que estaba guardado en la dirección de Z
+	SBI		PORTC, PC0	// Se habilitan los transistores para sacar solamente el valor a un disp
 	RET
 /*---------------------------------------------------------------------------------------------------*/
 // Sub-rutina de interrupcion
@@ -256,10 +307,10 @@ TR4_TIME:
 TMR0_OV:
 	PUSH	R16
 	IN		R16, SREG
-	PUSH	R16
+	PUSH	R16			// Se guarda el valor de r16 y del SREG en la pila
 
 	SBI		TIFR0, TOV0	// Si está encendida la bandera de overflow, salta a apagarla
-	LDI		R16, 178
+	LDI		R16, T0VALUE
 	OUT		TCNT0, R16	// Se vuelve a cargar un valor inicial a Timer0 
 	INC		COUNT_T0
 	CPI		COUNT_T0, 0x04
@@ -273,80 +324,116 @@ OVERFLOW_CT0:
 EXIT_TMR0:
 	POP		R16
 	OUT		SREG, R16
-	POP		R16
+	POP		R16			// Se saca el valor de r16 y del SREG de la pila
 	RETI
 
 
 // Sub-rutina de interrupcion para suma de tiempo de reloj
-TIMER1_OV:
+TMR1_OV:
 	PUSH	R16
 	IN		R16, SREG
-	PUSH	R16
+	PUSH	R16			// Se guarda el valor de R16 y del SREG en la pila
 
-SUMA: 
-	INC		R20
-	CPI		R20, 0x0A	// Le sumamos 1 a R20 y comparamos si hay overflow
-	BREQ	OVERFLOW_10M	// Si llega a 10M, reinicia las unidades y le suma uno a las decenas
-	LPM		R16, Z
+	SBI		TIFR1, TOV1	// Si está encendida la bandera de overflow, salta a apagarla
+	LDI		R16, T1HVALUE
+	STS		TCNT1H, R16	// Se vuelve a cargar un valor inicial a Timer1H
+	LDI		R16, T1LVALUE
+	STS		TCNT1L, R16 // Se vuelve a cargar un valor inicial a Timer1L
 	LDI		COUNT_T0, 0		// Se reinicia el contador para el timer
+	
+	// Suma del tiempo en el reloj
+	LDS		R16, UMIN
+	INC		R16	
+	CPI		R16, 0x0A	// Se le suma 1 a UMIN y comparamos si hay overflow
+	BREQ	SUM_DMIN	// Si llega a 10M salta a SUM_DMIN
+	STS		UMIN, R16	// Se actualiza el valor de UMIN en la RAM
 	RJMP	RETURN_T0
-OVERFLOW_10M:
-	LDI		R20, 0x00	// Se reinicia el contador completo
-	INC		R21
-	CPI		R21, 0x06
-	BREQ	OVERFLOW_60M
-	LDI		COUNT_T0, 0		// Se reinicia el contador para el timer
+SUM_DMIN:
+	CLR		R16
+	STS		UMIN, R16	// Se reinicia UMIN y se guarda en la RAM
+	LDS		R16, DMIN
+	INC		R16
+	CPI		R16, 0x06	// Se le suma 1 a DMIN y comparamos si hay overflow
+	BREQ	SUM_UHRS	// Si llega a 1H salta a SUM_UHRS
+	STS		DMIN, R16	// Se actualiza el valor de DMIN en la RAM
 	RJMP	RETURN_T0
-OVERFLOW_60M:
-	LDI		R20, 0x00
-	LDI		R21, 0x00	// Se reinicia el contador completo
-	INC		R22
-	CPI		R24, 0x02
-	BREQ	OVERFLOW_24H
-	CPI		R22, 0x0A
-	BREQ	OVERFLOW_10H
-	LDI		COUNT_T0, 0		// Se reinicia el contador para el timer
+SUM_UHRS:
+	CLR		R16
+	STS		UMIN, R16
+	STS		DMIN, R16	// Se reinician los minutos y se guarda en la RAM
+	LDS		R16, DHRS
+	CPI		R16, 0x02	// Se verifica si llegó a 20HRS
+	BREQ	SUM_24HRS	// Si llegó a 20HRS, salta a SUM_24HRS
+	LDS		R16, UHRS
+	INC		R16
+	CPI		R16, 0x0A	// Se le suma 1 a UHRS y comparamos si hay overflow
+	BREQ	SUM_DHRS	// Si llega a 10H salta a SUM_DHRS
+	STS		UHRS, R16	// Se actualiza el valor de UHRS en la RAM
 	RJMP	RETURN_T0
-OVERFLOW_10H:
-	LDI		R20, 0x00
-	LDI		R21, 0x00
-	LDI		R22, 0x00	// Se reinicia el contador completo
-	INC		R24
-	CPI		R24, 0x02
-	BREQ	OVERFLOW_20H
-	LDI		COUNT_T0, 0		// Se reinicia el contador para el timer
+SUM_DHRS:
+	CLR		R16
+	STS		UMIN, R16
+	STS		DMIN, R16
+	STS		UHRS, R16	// Se reinician los minutos y UHRS, y se guarda en la RAM
+	LDS		R16, DHRS
+	INC		R16
+	CPI		R24, 0x02	// Se le suma 1 a DHRS y comparamos si hay overflow
+	BREQ	SUM_24HRS	// Si llega a 20H salta a SUM_DHRS
+	STS		DHRS, R16	// Se actualiza el valor de DHRS en la RAM
 	RJMP	RETURN_T0
-OVERFLOW_20H:
-	LDI		R20, 0x00
-	LDI		R21, 0x00
-	LDI		R22, 0x00	// Se reinicia el contador completo
-	INC		R24
-	CPI		R24, 0x06
-	BREQ	OVERFLOW_24H
-	LDI		COUNT_T0, 0		// Se reinicia el contador para el timer
+SUM_24HRS:
+	LDS		R16, UHRS
+	INC		R16			
+	CPI		R16, 0x04	// Se le suma 1 a UHRS y comparamos si hay overflow
+	BREQ	SUM_UDAY	// Si llega a 24H salta a SUM_UDAY
+	STS		UHRS, R16	// Se actualiza el valor de UHRS en la RAM
 	RJMP	RETURN_T0
-OVERFLOW_24H:
-	LDI		R20, 0x00
-	LDI		R21, 0x00
-	LDI		R22, 0x00	
-	LDI		R24, 0x00	// Se reinicia el contador completo
-	BREQ	OVERFLOW_10D
-	LDI		COUNT_T0, 0		// Se reinicia el contador para el timer
-	RJMP	RETURN_T0
-OVERFLOW_10D:
+SUM_UDAY:
+	CLR		R16
+	STS		UMIN, R16
+	STS		DMIN, R16
+	STS		UHRS, R16
+	STS		DHRS, R16	// Se reinician los minutos y las horas, y se guarda en la RAM
 
+	RJMP	RETURN_T0
 
 RETURN_T0:
 	POP		R16
 	OUT		SREG, R16
-	POP		R16
+	POP		R16			// Se saca el valor de r16 y del SREG de la pila
 	RETI
+
+
+// Sub-rutina de interrupcion para overflow del Timer2
+TMR2_OV:
+	PUSH	R16
+	IN		R16, SREG
+	PUSH	R16			// Se guarda el valor de r16 y del SREG en la pila
+
+	SBI		TIFR2, TOV2	// Si está encendida la bandera de overflow, salta a apagarla
+	LDI		R16, T2VALUE
+	STS		TCNT2, R16	// Se vuelve a cargar un valor inicial a Timer0 
+	INC		COUNT_T2
+	CPI		COUNT_T2, 50
+	BREQ	TOGGLE_LEDS
+	RJMP	OUT_TMR2
+TOGGLE_LEDS:
+	SBI		PINC, PC5
+	CLR		COUNT_T2
+	RJMP	OUT_TMR2
+
+OUT_TMR2:
+	POP		R16
+	OUT		SREG, R16
+	POP		R16			// Se saca el valor de r16 y del SREG de la pila
+	RETI
+
 
 // Sub-rutina de interrupcion para detectar botones
 PBREAD:
 	PUSH	R16
 	IN		R16, SREG
-	PUSH	R16
+	PUSH	R16			// Se guarda el valor de r16 y del SREG en la pila
 
 	IN		R16, PINB	// Se guarda el estado de PORTB en R16
 	SBIS	PINB, PB0
@@ -377,8 +464,5 @@ UNDERFLOW:
 RETURN_PB:
 	POP		R16
 	OUT		SREG, R16
-	POP		R16
-	RETI
-
-TMR0_1V:
+	POP		R16			// Se saca el valor de r16 y del SREG de la pila
 	RETI
