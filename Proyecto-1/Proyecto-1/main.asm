@@ -9,8 +9,8 @@
 .include "M328PDEF.inc"
 
 .equ	T0VALUE		= 0xFD
-.equ	T1HVALUE	= 0x1B//0xFF
-.equ	T1LVALUE	= 0x1E//0xFD
+.equ	T1HVALUE	= 0xFF//0x1B
+.equ	T1LVALUE	= 0xFF//0x1E
 .equ	T2VALUE		= 0x64
 .equ	MODES		= 8
 .def	COUNT_T0	= R17	// Registro que guarda el contador de Timer0
@@ -19,6 +19,9 @@
 .def	PBSTATE		= R19	// Registro que guarda el estado de los botones
 .def	TRDISP		= R20	// Registro que guarda el estado de los transistores
 .def	MODE		= R21	// Registro que guarda el modo actual
+.def	MES			= R24	// Registro que guarda el mes actual
+
+	// Registros ocupados: R16, R17, R18, R18, R20, R21, R22, 
 
 .dseg
 .org	SRAM_START
@@ -57,7 +60,8 @@ SETUP:
 	// Lista de valores para mostrar números en el display
 	Disp_Hex:	.DB 0x3F, 0x06, 0x5B, 0x4F, 0x66, 0x6D, 0x7D, 0x07, 0x7F, 0x6F
 	//				 0		1	 2	   3	 4	   5	 6	   7	 8	   9
-	Meses:		.DB 0x1F, 0x1C, 0x1F, 0x1E, 0x1F, 0x1E, 0x1F, 0x1F, 0x1E, 0x1F, 0x1E, 0x1F
+	Meses:		.DB	0x31, 0x28, 0x31, 0x30, 0x31, 0x30, 0x31, 0x31, 0x30, 0x31, 0x30, 0x31
+	//			.DB 0x1F, 0x1C, 0x1F, 0x1E, 0x1F, 0x1E, 0x1F, 0x1F, 0x1E, 0x1F, 0x1E, 0x1F
 	//			  | Jan | Feb |	Mar | Apr | May | Jun |	Jul | Aug | Sep | Oct | Nov | Dec |
 
 	// Se configura la pila
@@ -128,7 +132,8 @@ SETUP:
 	CLR		LEDMODE		// Se coloca 0x00 a R18
 	LDI		PBSTATE, 0xFF	// Se coloca 0xFF a R19
 	CLR		TRDISP		// Se coloca 0x00 a R20
-	CLR		MODE		// Se coloca en el primer modo del reloj
+	LDI		MODE, 0x01		// Se coloca en el primer modo del reloj
+	CLR		MES			// Se coloca el registro que guarda el mes actual en enero
 
 	CALL	INICIAR_DISP// Se inicia el display donde se mostrará el contador
 	
@@ -191,18 +196,161 @@ D_HRS:
 
 
 FECHA:
+	CPI		COUNT_T0, 0x00
+	BREQ	U_DAY
+	CPI		COUNT_T0, 0x01
+	BREQ	D_DAY
+	CPI		COUNT_T0, 0x02
+	BREQ	U_MO
+	CPI		COUNT_T0, 0x03
+	BREQ	D_MO
 	RJMP	MAIN
+
+U_DAY:
+	LDI		COUNT_T0, 0x01
+	CALL	TR1_DATE
+	RJMP	MAIN
+	
+D_DAY:
+	LDI		COUNT_T0, 0x02
+	CALL	TR2_DATE
+	RJMP	MAIN
+
+U_MO:
+	LDI		COUNT_T0, 0x03
+	CALL	TR3_DATE
+	RJMP	MAIN
+
+D_MO:
+	LDI		COUNT_T0, 0x00
+	CALL	TR4_DATE
+	RJMP	MAIN
+
 
 CONFIG_MIN:
+	CPI		COUNT_T0, 0x00
+	BREQ	U_MIN
+	CPI		COUNT_T0, 0x01
+	BREQ	D_MIN
+	CPI		COUNT_T0, 0x02
+	BREQ	U_HRS
+	CPI		COUNT_T0, 0x03
+	BREQ	D_HRS
 	RJMP	MAIN
+
+U_MIN:
+	LDI		COUNT_T0, 0x01
+	CALL	TR1_TIME
+	RJMP	MAIN
+	
+D_MIN:
+	LDI		COUNT_T0, 0x02
+	CALL	TR2_TIME
+	RJMP	MAIN
+
+U_HRS:
+	LDI		COUNT_T0, 0x03
+	CALL	TR3_TIME
+	RJMP	MAIN
+
+D_HRS:
+	LDI		COUNT_T0, 0x00
+	CALL	TR4_TIME
+	RJMP	MAIN
+
 
 CONFIG_HRS:
+	CPI		COUNT_T0, 0x00
+	BREQ	U_MIN
+	CPI		COUNT_T0, 0x01
+	BREQ	D_MIN
+	CPI		COUNT_T0, 0x02
+	BREQ	U_HRS
+	CPI		COUNT_T0, 0x03
+	BREQ	D_HRS
 	RJMP	MAIN
 
+U_MIN:
+	LDI		COUNT_T0, 0x01
+	CALL	TR1_TIME
+	RJMP	MAIN
+	
+D_MIN:
+	LDI		COUNT_T0, 0x02
+	CALL	TR2_TIME
+	RJMP	MAIN
+
+U_HRS:
+	LDI		COUNT_T0, 0x03
+	CALL	TR3_TIME
+	RJMP	MAIN
+
+D_HRS:
+	LDI		COUNT_T0, 0x00
+	CALL	TR4_TIME
+	RJMP	MAIN
+
+
 CONFIG_DAY:
+	CPI		COUNT_T0, 0x00
+	BREQ	U_DAY
+	CPI		COUNT_T0, 0x01
+	BREQ	D_DAY
+	CPI		COUNT_T0, 0x02
+	BREQ	U_MO
+	CPI		COUNT_T0, 0x03
+	BREQ	D_MO
+	RJMP	MAIN
+
+U_DAY:
+	LDI		COUNT_T0, 0x01
+	CALL	TR1_DATE
+	RJMP	MAIN
+	
+D_DAY:
+	LDI		COUNT_T0, 0x02
+	CALL	TR2_DATE
+	RJMP	MAIN
+
+U_MO:
+	LDI		COUNT_T0, 0x03
+	CALL	TR3_DATE
+	RJMP	MAIN
+
+D_MO:
+	LDI		COUNT_T0, 0x00
+	CALL	TR4_DATE
 	RJMP	MAIN
 
 CONFIG_MONTH:
+	CPI		COUNT_T0, 0x00
+	BREQ	U_DAY
+	CPI		COUNT_T0, 0x01
+	BREQ	D_DAY
+	CPI		COUNT_T0, 0x02
+	BREQ	U_MO
+	CPI		COUNT_T0, 0x03
+	BREQ	D_MO
+	RJMP	MAIN
+
+U_DAY:
+	LDI		COUNT_T0, 0x01
+	CALL	TR1_DATE
+	RJMP	MAIN
+	
+D_DAY:
+	LDI		COUNT_T0, 0x02
+	CALL	TR2_DATE
+	RJMP	MAIN
+
+U_MO:
+	LDI		COUNT_T0, 0x03
+	CALL	TR3_DATE
+	RJMP	MAIN
+
+D_MO:
+	LDI		COUNT_T0, 0x00
+	CALL	TR4_DATE
 	RJMP	MAIN
 
 CONFAL_MIN:
@@ -224,7 +372,7 @@ INIT_TMR0:
 	RET
 
 INIT_TMR1:
-	LDI		R16, (1 << CS12) | (1 << CS10)
+	LDI		R16, (1 << CS12) /*| (1 << CS10)*/
 	STS		TCCR1B, R16	// Setear prescaler del TIMER1 a 1024
 	LDI		R16, T1HVALUE
 	STS		TCNT1H, R16	// Cargar valor inicial en TCNT1H
@@ -294,6 +442,62 @@ TR4_TIME:
 	CBI		PORTC, PC2
 	CBI		PORTC, PC3
 	LDS		R16, DHRS
+	LDI		ZL, LOW(Disp_Hex << 1)	
+	LDI		ZH, HIGH(Disp_Hex << 1)	// Se apunta a la primera dirección de Z
+	ADD		ZL, R16		// Se carga a Z Low el valor de R22 por medio de Suma ZL=0
+	LPM		R16, Z		// Se carga el valor guardado en la dirección de Z
+	OUT		PORTD, R16	// Se saca a PORTD el valor de que estaba guardado en la dirección de Z
+	SBI		PORTC, PC0	// Se habilitan los transistores para sacar solamente el valor a un disp
+	RET
+
+TR1_DATE:
+	CBI		PORTC, PC0
+	CBI		PORTC, PC1
+	CBI		PORTC, PC2
+	CBI		PORTC, PC3
+	LDS		R16, UDAY
+	LDI		ZL, LOW(Disp_Hex << 1)	
+	LDI		ZH, HIGH(Disp_Hex << 1)	// Se apunta a la primera dirección de Z
+	ADD		ZL, R16		// Se carga a Z Low el valor de R20 por medio de Suma ZL=0
+	LPM		R16, Z		// Se carga el valor guardado en la dirección de Z
+	OUT		PORTD, R16	// Se saca a PORTD el valor de que estaba guardado en la dirección de Z
+	SBI		PORTC, PC3  // Se habilitan los transistores para sacar solamente el valor a un disp
+	RET
+
+TR2_DATE:
+	CBI		PORTC, PC0
+	CBI		PORTC, PC1
+	CBI		PORTC, PC2
+	CBI		PORTC, PC3
+	LDS		R16, DDAY
+	LDI		ZL, LOW(Disp_Hex << 1)	
+	LDI		ZH, HIGH(Disp_Hex << 1)	// Se apunta a la primera dirección de Z
+	ADD		ZL, R16		// Se carga a Z Low el valor de R22 por medio de Suma ZL=0
+	LPM		R16, Z		// Se carga el valor guardado en la dirección de Z
+	OUT		PORTD, R16	// Se saca a PORTD el valor de que estaba guardado en la dirección de Z
+	SBI		PORTC, PC2	// Se habilitan los transistores para sacar solamente el valor a un disp
+	RET
+
+TR3_DATE:
+	CBI		PORTC, PC0
+	CBI		PORTC, PC1
+	CBI		PORTC, PC2
+	CBI		PORTC, PC3
+	LDS		R16, UMO
+	LDI		ZL, LOW(Disp_Hex << 1)	
+	LDI		ZH, HIGH(Disp_Hex << 1)	// Se apunta a la primera dirección de Z
+	ADD		ZL, R16		// Se carga a Z Low el valor de R22 por medio de Suma ZL=0
+	LPM		R16, Z		// Se carga el valor guardado en la dirección de Z
+	OUT		PORTD, R16	// Se saca a PORTD el valor de que estaba guardado en la dirección de Z
+	SBI		PORTC, PC1	// Se habilitan los transistores para sacar solamente el valor a un disp
+	RET
+
+TR4_DATE:
+	CBI		PORTC, PC0
+	CBI		PORTC, PC1
+	CBI		PORTC, PC2
+	CBI		PORTC, PC3
+	LDS		R16, DMO
 	LDI		ZL, LOW(Disp_Hex << 1)	
 	LDI		ZH, HIGH(Disp_Hex << 1)	// Se apunta a la primera dirección de Z
 	ADD		ZL, R16		// Se carga a Z Low el valor de R22 por medio de Suma ZL=0
@@ -377,8 +581,6 @@ SUM_DHRS:
 	STS		UHRS, R16	// Se reinician los minutos y UHRS, y se guarda en la RAM
 	LDS		R16, DHRS
 	INC		R16
-	CPI		R24, 0x02	// Se le suma 1 a DHRS y comparamos si hay overflow
-	BREQ	SUM_24HRS	// Si llega a 20H salta a SUM_DHRS
 	STS		DHRS, R16	// Se actualiza el valor de DHRS en la RAM
 	RJMP	RETURN_T0
 SUM_24HRS:
@@ -394,7 +596,103 @@ SUM_UDAY:
 	STS		DMIN, R16
 	STS		UHRS, R16
 	STS		DHRS, R16	// Se reinician los minutos y las horas, y se guarda en la RAM
+	LDS		R16, UDAY
+	LDS		R23, DDAY
+	LSL		R23
+	LSL		R23
+	LSL		R23
+	LSL		R23
+	ADD		R23, R16	// Se sacan los valores de UDAY y DDAY y se suman en un registro
+	LDI		ZL, LOW(Meses << 1)  
+	LDI		ZH, HIGH(Meses << 1)  
+	ADD		ZL, MES
+	LPM		R16, Z		// Se saca el valor de la cantidad de días que tiene el Mes actual
+	CP		R23, R16
+	BREQ	SUM_UMO	// Se comparan los valores de días actuales con los días del mes, si son iguales salta a SUM_MDAY
+	LDS		R16, UDAY
+	INC		R16
+	CPI		R16, 0x0A	// Se le suma 1 a UDAY y comparamos si hay overflow
+	BREQ	SUM_DDAY	// Si llega a 10D salta a SUM_DDAY
+	STS		UDAY, R16	// Se actualiza el valor de DDAY en la RAM
+	RJMP	RETURN_T0
+SUM_DDAY:
+	CLR		R16
+	STS		UMIN, R16
+	STS		DMIN, R16
+	STS		UHRS, R16
+	STS		DHRS, R16
+	STS		UDAY, R16	// Se reinician los minutos, las horas y UDAY, y se guarda en la RAM
+	LDS		R16, UDAY
+	LDS		R23, DDAY
+	LSL		R23
+	LSL		R23
+	LSL		R23
+	LSL		R23
+	ADD		R23, R16	// Se sacan los valores de UDAY y DDAY y se suman en un registro
+	LDI		ZL, LOW(Meses << 1)  
+	LDI		ZH, HIGH(Meses << 1)  
+	ADD		ZL, MES
+	LPM		R16, Z		// Se saca el valor de la cantidad de días que tiene el Mes actual
+	CP		R23, R16
+	BREQ	SUM_UMO	// Se comparan los valores de días actuales con los días del mes, si son iguales salta a SUM_MDAY
+	LDS		R16, DDAY
+	INC		R16
+	STS		DDAY, R16
+	RJMP	RETURN_T0
+SUM_UMO:
+	CLR		R16
+	STS		UMIN, R16
+	STS		DMIN, R16
+	STS		UHRS, R16
+	STS		DHRS, R16
+	STS		DDAY, R16
+	LDI		R16, 0x01
+	STS		UDAY, R16	// Se reinician los minutos, las horas y UDAY, y se guarda en la RAM
+	INC		MES
+	LDS		R16, DMO
+	CPI		R16, 0x01
+	BREQ	SUM_YMO
+	LDS		R16, UMO
+	INC		R16
+	CPI		R16, 0x0A
+	BREQ	SUM_DMO
+	STS		UMO, R16
+	RJMP	RETURN_T0
 
+SUM_DMO:
+	CLR		R16
+	STS		UMIN, R16
+	STS		DMIN, R16
+	STS		UHRS, R16
+	STS		DHRS, R16
+	STS		UMO, R16
+	LDI		R16, 0x01
+	STS		UDAY, R16	// Se reinician los minutos, las horas y UDAY, y se guarda en la RAM
+	LDS		R16, DMO
+	INC		R16
+	STS		DMO, R16
+	RJMP	RETURN_T0
+
+SUM_YMO:
+	LDS		R16, UMO
+	INC		R16
+	CPI		R16, 0x03
+	BREQ	HAPPY_NEW_YEAR
+	STS		UMO, R16
+	RJMP	RETURN_T0
+
+HAPPY_NEW_YEAR:
+	CLR		R16
+	STS		UMIN, R16
+	STS		DMIN, R16
+	STS		UHRS, R16
+	STS		DHRS, R16
+	STS		DDAY, R16
+	STS		DMO, R16
+	LDI		R16, 0x01
+	STS		UMO, R16
+	STS		UDAY, R16
+	CLR		MES
 	RJMP	RETURN_T0
 
 RETURN_T0:
