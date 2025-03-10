@@ -9,8 +9,8 @@
 .include "M328PDEF.inc"
 
 .equ	T0VALUE		= 0xFD
-.equ	T1HVALUE	= 0xFF//0x1B
-.equ	T1LVALUE	= 0xFF//0x1E
+.equ	T1HVALUE	= 0x1B//0xFF
+.equ	T1LVALUE	= 0x1E//0xFF
 .equ	T2VALUE		= 0x64
 .equ	MODES		= 8
 .def	COUNT_T0	= R17	// Registro que guarda el contador de Timer0
@@ -21,7 +21,7 @@
 .def	MODE		= R21	// Registro que guarda el modo actual
 .def	MES			= R24	// Registro que guarda el mes actual
 
-	// Registros ocupados: R16, R17, R18, R18, R20, R21, R22, 
+	// Registros ocupados: R16, R17, R18, R18, R20, R21, R22, R23, R24
 
 .dseg
 .org	SRAM_START
@@ -98,7 +98,7 @@ SETUP:
 	// Se habilitan las interrupciones de Pin Change 0
 	LDI		R16, (1 << PCIE0)
 	STS		PCICR, R16
-	LDI		R16, (1 << PCINT0) | (1 << PCINT1)
+	LDI		R16, (1 << PCINT0) | (1 << PCINT1) | (1 << PCINT2)
 	STS		PCMSK0, R16
 
 	// Se configuran pines de entrada y salida (DDRx, PORTx, PINx)
@@ -132,7 +132,7 @@ SETUP:
 	CLR		LEDMODE		// Se coloca 0x00 a R18
 	LDI		PBSTATE, 0xFF	// Se coloca 0xFF a R19
 	CLR		TRDISP		// Se coloca 0x00 a R20
-	LDI		MODE, 0x01		// Se coloca en el primer modo del reloj
+	LDI		MODE, 0x00		// Se coloca en el primer modo del reloj
 	CLR		MES			// Se coloca el registro que guarda el mes actual en enero
 
 	CALL	INICIAR_DISP// Se inicia el display donde se mostrará el contador
@@ -152,18 +152,39 @@ MAIN:
 	CPI		MODE, 4
 	BREQ	CONFIG_DAY	// Modo que configura el día
 	CPI		MODE, 5
-	BREQ	CONFIG_MONTH// Modo que configura el mes
+	BREQ	CONFIG_MONTH// Modo que configura el mes	
 	CPI		MODE, 6
 	BREQ	CONFAL_MIN	// Modo que configura los minutos de la alarma
 	CPI		MODE, 7
 	BREQ	CONFAL_HRS	// Modo que configura la hora de la alarma
 	CPI		MODE, 8
 	BREQ	ALARM_OFF	// Modo que apaga la alarma
- 	RJMP	MAIN	// Para mantener entretenido el main loop
-
+	RJMP	MAIN
+HORA:
+	RJMP	MODE_HORA
+FECHA:
+	RJMP	MODE_FECHA
+CONFIG_MIN:
+	RJMP	MODE_CONFIG_MIN
+CONFIG_HRS:
+	RJMP	MODE_CONFIG_HRS
+CONFIG_DAY:
+	RJMP	MODE_CONFIG_DAY
+CONFIG_MONTH:
+	RJMP	MODE_CONFIG_MONTH
+CONFAL_MIN:
+	RJMP	MODE_CONFAL_MIN
+CONFAL_HRS:
+	RJMP	MODE_CONFAL_HRS
+ALARM_OFF:
+	RJMP	MODE_ALARM_OFF
+RJMP	MAIN
 /*---------------------------------------------------------------------------------------------------*/
 // Sub-rutina de modos
-HORA:
+// Modo de Hora
+MODE_HORA:
+	LDI		R16, (1 << TOIE1)
+	STS		TIMSK1, R16		// Se habilitan las interrupciones del Timer1
 	CPI		COUNT_T0, 0x00
 	BREQ	U_MIN
 	CPI		COUNT_T0, 0x01
@@ -195,7 +216,8 @@ D_HRS:
 	RJMP	MAIN
 
 
-FECHA:
+// Modo de Fecha
+MODE_FECHA:
 	CPI		COUNT_T0, 0x00
 	BREQ	U_DAY
 	CPI		COUNT_T0, 0x01
@@ -227,7 +249,10 @@ D_MO:
 	RJMP	MAIN
 
 
-CONFIG_MIN:
+// Modo de configuración de minutos
+MODE_CONFIG_MIN:
+	CLR		R16
+	STS		TIMSK1, R16		// Se deshabilitan las interrupciones del Timer1
 	CPI		COUNT_T0, 0x00
 	BREQ	U_MIN
 	CPI		COUNT_T0, 0x01
@@ -238,28 +263,9 @@ CONFIG_MIN:
 	BREQ	D_HRS
 	RJMP	MAIN
 
-U_MIN:
-	LDI		COUNT_T0, 0x01
-	CALL	TR1_TIME
-	RJMP	MAIN
-	
-D_MIN:
-	LDI		COUNT_T0, 0x02
-	CALL	TR2_TIME
-	RJMP	MAIN
 
-U_HRS:
-	LDI		COUNT_T0, 0x03
-	CALL	TR3_TIME
-	RJMP	MAIN
-
-D_HRS:
-	LDI		COUNT_T0, 0x00
-	CALL	TR4_TIME
-	RJMP	MAIN
-
-
-CONFIG_HRS:
+// Modo de configuración de hora
+MODE_CONFIG_HRS:
 	CPI		COUNT_T0, 0x00
 	BREQ	U_MIN
 	CPI		COUNT_T0, 0x01
@@ -270,28 +276,9 @@ CONFIG_HRS:
 	BREQ	D_HRS
 	RJMP	MAIN
 
-U_MIN:
-	LDI		COUNT_T0, 0x01
-	CALL	TR1_TIME
-	RJMP	MAIN
-	
-D_MIN:
-	LDI		COUNT_T0, 0x02
-	CALL	TR2_TIME
-	RJMP	MAIN
 
-U_HRS:
-	LDI		COUNT_T0, 0x03
-	CALL	TR3_TIME
-	RJMP	MAIN
-
-D_HRS:
-	LDI		COUNT_T0, 0x00
-	CALL	TR4_TIME
-	RJMP	MAIN
-
-
-CONFIG_DAY:
+// Modo de configuración de día
+MODE_CONFIG_DAY:
 	CPI		COUNT_T0, 0x00
 	BREQ	U_DAY
 	CPI		COUNT_T0, 0x01
@@ -302,27 +289,9 @@ CONFIG_DAY:
 	BREQ	D_MO
 	RJMP	MAIN
 
-U_DAY:
-	LDI		COUNT_T0, 0x01
-	CALL	TR1_DATE
-	RJMP	MAIN
-	
-D_DAY:
-	LDI		COUNT_T0, 0x02
-	CALL	TR2_DATE
-	RJMP	MAIN
 
-U_MO:
-	LDI		COUNT_T0, 0x03
-	CALL	TR3_DATE
-	RJMP	MAIN
-
-D_MO:
-	LDI		COUNT_T0, 0x00
-	CALL	TR4_DATE
-	RJMP	MAIN
-
-CONFIG_MONTH:
+// Modo de configuración de mes
+MODE_CONFIG_MONTH:
 	CPI		COUNT_T0, 0x00
 	BREQ	U_DAY
 	CPI		COUNT_T0, 0x01
@@ -333,33 +302,17 @@ CONFIG_MONTH:
 	BREQ	D_MO
 	RJMP	MAIN
 
-U_DAY:
-	LDI		COUNT_T0, 0x01
-	CALL	TR1_DATE
-	RJMP	MAIN
-	
-D_DAY:
-	LDI		COUNT_T0, 0x02
-	CALL	TR2_DATE
+
+// Modo de configuración de minutos de alarma
+MODE_CONFAL_MIN:
 	RJMP	MAIN
 
-U_MO:
-	LDI		COUNT_T0, 0x03
-	CALL	TR3_DATE
+// Modo de configuración de horas de alarma
+MODE_CONFAL_HRS:
 	RJMP	MAIN
 
-D_MO:
-	LDI		COUNT_T0, 0x00
-	CALL	TR4_DATE
-	RJMP	MAIN
-
-CONFAL_MIN:
-	RJMP	MAIN
-
-CONFAL_HRS:
-	RJMP	MAIN
-
-ALARM_OFF:
+// Modo de apagado de alarma
+MODE_ALARM_OFF:
 	RJMP	MAIN
 
 /*---------------------------------------------------------------------------------------------------*/
@@ -372,7 +325,7 @@ INIT_TMR0:
 	RET
 
 INIT_TMR1:
-	LDI		R16, (1 << CS12) /*| (1 << CS10)*/
+	LDI		R16, (1 << CS12) | (1 << CS10)
 	STS		TCCR1B, R16	// Setear prescaler del TIMER1 a 1024
 	LDI		R16, T1HVALUE
 	STS		TCNT1H, R16	// Cargar valor inicial en TCNT1H
@@ -735,32 +688,326 @@ PBREAD:
 
 	IN		R16, PINB	// Se guarda el estado de PORTB en R16
 	SBIS	PINB, PB0
-	RJMP	SUMA_C2		// En caso que se presione pb0: Suma, no: Salta
+	RJMP	MODE_CHANGE		// En caso que se presione pb0: Cambia de modo, no: Salta
+	CPI		MODE, 2
+	BREQ	MINUTOS		// Modo que configura los minutos
+	CPI		MODE, 3
+	BREQ	HORAS		// Modo que configura la hora
+	CPI		MODE, 4
+	BREQ	DIAS		// Modo que configura el día
+	CPI		MODE, 5
+	BREQ	MONTH		// Modo que configura el mes
+//	CPI		MODE, 6
+//	BREQ	MINUTOS_AL	// Modo que configura los minutos de la alarma
+//	CPI		MODE, 7
+//	BREQ	HORAS_AL	// Modo que configura la hora de la alarma
+	RJMP	OUT_PB
+
+MINUTOS:
+	RJMP	EDIT_MINUTOS
+HORAS:
+	RJMP	EDIT_HORAS
+DIAS:
+	RJMP	EDIT_DIAS
+MONTH:
+	RJMP	EDIT_MESES
+RJMP	OUT_PB
+
+
+MODE_CHANGE:
+	INC		MODE
+	CPI		MODE, 0x09	// Le sumamos 1 a R20 y comparamos si hay overflow
+	BREQ	OVERFLOW_MODE	// Si hay overflow, reinicia el sumador
+	RJMP	OUT_PB
+OVERFLOW_MODE:
+	LDI		MODE, 0x00	// Si hay overflow, hacemos reset al registro R20
+	RJMP	OUT_PB
+
+EDIT_MINUTOS:
+	IN		R16, PORTB
 	SBIS	PINB, PB1
-	RJMP	RESTA		// En caso que se presione pb1: Resta, no: Salta
-	RJMP	RETURN_PB
+	RJMP	SUMA_UMIN
+	SBIS	PINB, PB2
+	RJMP	RES_UMIN
+	RJMP	OUT_PB
 
-SUMA_C2:
-	INC		R29
-	CPI		R29, 0x10	// Le sumamos 1 a R20 y comparamos si hay overflow
-	BREQ	OVERFLOW_C2	// Si hay overflow, reinicia el sumador
-	RJMP	RETURN_PB
-OVERFLOW_C2:
-	LDI		R29, 0x00	// Si hay overflow, hacemos reset al registro R20
-	OUT		PORTC, R29	// Sacamos el valor guardado en R21 a PORTC
-	RJMP	RETURN_PB
+SUMA_UMIN:
+	LDS		R16, UMIN
+	INC		R16	
+	CPI		R16, 0x0A	// Se le suma 1 a UMIN y comparamos si hay overflow
+	BREQ	SUMA_DMIN	// Si llega a 10M salta a SUM_DMIN
+	STS		UMIN, R16	// Se actualiza el valor de UMIN en la RAM
+	RJMP	OUT_PB
+SUMA_DMIN:
+	CLR		R16
+	STS		UMIN, R16	// Se reinicia UMIN y se guarda en la RAM
+	LDS		R16, DMIN
+	INC		R16
+	CPI		R16, 0x06	// Se le suma 1 a DMIN y comparamos si hay overflow
+	BREQ	OVERFLOW_MIN	// Si llega a 1H salta a OVERFLOW_MIN
+	STS		DMIN, R16	// Se actualiza el valor de DMIN en la RAM
+	RJMP	OUT_PB
+OVERFLOW_MIN:
+	CLR		R16
+	STS		UMIN, R16
+	STS		DMIN, R16	// Se reinician los minutos y se guardan los valores en la RAM
+	RJMP	OUT_PB
 
-RESTA:
-	DEC		R29
-	CPI		R29, 0xFF	// Le restamos 1 a R20 y comparamos si hay underflow
-	BREQ	UNDERFLOW	// Si hay underflow, setea el sumador
-	RJMP	RETURN_PB
-UNDERFLOW:
-	LDI		R29, 0x0F	// Si hay underflow, dejamos en reset al registro R21
-	RJMP	RETURN_PB
+RES_UMIN:
+	LDS		R16, UMIN
+	DEC		R16	
+	CPI		R16, 0xFF	// Se le resta 1 a UMIN y comparamos si hay underflow
+	BREQ	RES_DMIN	// Si resta menos de 0M salta a RES_DMIN
+	STS		UMIN, R16	// Se actualiza el valor de UMIN en la RAM
+	RJMP	OUT_PB
+RES_DMIN:
+	LDI		R16, 0x09
+	STS		UMIN, R16	// Se carga 0x09 a UMIN y se guarda en la RAM
+	LDS		R16, DMIN
+	DEC		R16
+	CPI		R16, 0xFF	// Se le resta 1 a DMIN y comparamos si hay underflow
+	BREQ	UNDERFLOW_MIN	// Si llega a menos de 0H salta a UNDERFLOW_MIN
+	STS		DMIN, R16	// Se actualiza el valor de DMIN en la RAM
+	RJMP	OUT_PB
+UNDERFLOW_MIN:
+	LDI		R16, 0x09
+	STS		UMIN, R16
+	LDI		R16, 0x05
+	STS		DMIN, R16	// Se reinician los minutos y se guardan los valores en la RAM
+	RJMP	OUT_PB
 
-RETURN_PB:
+EDIT_HORAS:
+	IN		R16, PORTB
+	SBIS	PINB, PB1
+	RJMP	SUMA_UHRS
+	SBIS	PINB, PB2
+	RJMP	RES_UHRS
+	RJMP	OUT_PB
+
+SUMA_UHRS:
+	LDS		R16, DHRS
+	CPI		R16, 0x02	// Se verifica si llegó a 20HRS
+	BREQ	SUMA_24HRS	// Si llegó a 20HRS, salta a SUM_24HRS
+	LDS		R16, UHRS
+	INC		R16
+	CPI		R16, 0x0A	// Se le suma 1 a UHRS y comparamos si hay overflow
+	BREQ	SUMA_DHRS	// Si llega a 10H salta a SUM_DHRS
+	STS		UHRS, R16	// Se actualiza el valor de UHRS en la RAM
+	RJMP	OUT_PB
+SUMA_DHRS:
+	CLR		R16
+	STS		UHRS, R16	// Se reinician los minutos y UHRS, y se guarda en la RAM
+	LDS		R16, DHRS
+	INC		R16
+	STS		DHRS, R16	// Se actualiza el valor de DHRS en la RAM
+	RJMP	OUT_PB
+SUMA_24HRS:
+	LDS		R16, UHRS
+	INC		R16			
+	CPI		R16, 0x04	// Se le suma 1 a UHRS y comparamos si hay overflow
+	BREQ	OVERFLOW_HRS	// Si llega a 24H salta a OVERFLOW_HRS
+	STS		UHRS, R16	// Se actualiza el valor de UHRS en la RAM
+	RJMP	OUT_PB
+OVERFLOW_HRS:
+	CLR		R16
+	STS		UHRS, R16
+	STS		DHRS, R16
+	RJMP	OUT_PB
+
+RES_UHRS:
+	LDS		R16, UHRS
+	DEC		R16
+	CPI		R16, 0xFF	// Se le suma 1 a UHRS y comparamos si hay underflow
+	BREQ	RES_DHRS	// Si llega a 10H salta a SUM_DHRS
+	STS		UHRS, R16	// Se actualiza el valor de UHRS en la RAM
+	RJMP	OUT_PB
+RES_DHRS:
+	LDI		R16, 0x09
+	STS		UHRS, R16	// Se reinician los minutos y UHRS, y se guarda en la RAM
+	LDS		R16, DHRS
+	DEC		R16
+	CPI		R16, 0xFF
+	BREQ	UNDERFLOW_HRS
+	STS		DHRS, R16	// Se actualiza el valor de DHRS en la RAM
+	RJMP	OUT_PB
+UNDERFLOW_HRS:
+	LDI		R16, 0x03
+	STS		UHRS, R16
+	LDI		R16, 0x02
+	STS		DHRS, R16
+	RJMP	OUT_PB
+
+EDIT_DIAS:
+	IN		R16, PORTB
+	SBIS	PINB, PB1
+	RJMP	SUMA_UDAY
+	SBIS	PINB, PB2
+	RJMP	RES_UDAY
+	RJMP	OUT_PB
+
+SUMA_UDAY:
+	LDS		R16, UDAY
+	LDS		R23, DDAY
+	LSL		R23
+	LSL		R23
+	LSL		R23
+	LSL		R23
+	ADD		R23, R16	// Se sacan los valores de UDAY y DDAY y se suman en un registro
+	LDI		ZL, LOW(Meses << 1)  
+	LDI		ZH, HIGH(Meses << 1)  
+	ADD		ZL, MES
+	LPM		R16, Z		// Se saca el valor de la cantidad de días que tiene el Mes actual
+	CP		R23, R16
+	BREQ	OVERFLOW_DIA	// Se comparan los valores de días actuales con los días del mes, si son iguales salta a SUM_MDAY
+	LDS		R16, UDAY
+	INC		R16
+	CPI		R16, 0x0A	// Se le suma 1 a UDAY y comparamos si hay overflow
+	BREQ	SUMA_DDAY	// Si llega a 10D salta a SUM_DDAY
+	STS		UDAY, R16	// Se actualiza el valor de DDAY en la RAM
+	RJMP	OUT_PB
+SUMA_DDAY:
+	CLR		R16
+	STS		UDAY, R16	// Se reinicia UDAY y se guarda en la RAM
+	LDS		R16, UDAY
+	LDS		R23, DDAY
+	LSL		R23
+	LSL		R23
+	LSL		R23
+	LSL		R23
+	ADD		R23, R16	// Se sacan los valores de UDAY y DDAY y se suman en un registro
+	LDI		ZL, LOW(Meses << 1)  
+	LDI		ZH, HIGH(Meses << 1)  
+	ADD		ZL, MES
+	LPM		R16, Z		// Se saca el valor de la cantidad de días que tiene el Mes actual
+	CP		R23, R16
+	BREQ	OVERFLOW_DIA	// Se comparan los valores de días actuales con los días del mes, si son iguales salta a SUM_MDAY
+	LDS		R16, DDAY
+	INC		R16
+	STS		DDAY, R16
+	RJMP	OUT_PB
+OVERFLOW_DIA:
+	LDI		R16, 0x01
+	STS		UDAY, R16
+	CLR		R16
+	STS		DDAY, R16
+	RJMP	OUT_PB
+
+RES_UDAY:
+	LDS		R16, DDAY
+	CPI		R16, 0x00
+	BREQ	RES_MDAY
+	LDS		R16, UDAY
+	DEC		R16
+	CPI		R16, 0xFF	// Se le suma 1 a UDAY y comparamos si hay overflow
+	BREQ	RES_DDAY	// Si llega a 10D salta a SUM_DDAY
+	STS		UDAY, R16	// Se actualiza el valor de DDAY en la RAM
+	RJMP	OUT_PB
+RES_DDAY:
+	LDI		R16, 0x09
+	STS		UDAY, R16
+	LDS		R16, DDAY
+	DEC		R16
+	STS		DDAY, R16
+	RJMP	OUT_PB
+RES_MDAY:
+	LDS		R16, UDAY
+	DEC		R16
+	CPI		R16, 0x00
+	BREQ	UNDERFLOW_DIA
+	STS		UDAY, R16
+	RJMP	OUT_PB
+UNDERFLOW_DIA:
+	LDI		ZL, LOW(Meses << 1)  
+	LDI		ZH, HIGH(Meses << 1)  
+	ADD		ZL, MES
+	LPM		R16, Z
+	MOV		R23, R16
+	LSR		R23
+	LSR		R23
+	LSR		R23
+	LSR		R23
+	STS		DDAY, R23
+	ANDI	R16, 0x0F
+	STS		UDAY, R16
+	RJMP	OUT_PB
+
+EDIT_MESES:
+	IN		R16, PORTB
+	SBIS	PINB, PB1
+	RJMP	SUMA_UMO
+	SBIS	PINB, PB2
+	RJMP	RES_UMO
+	RJMP	OUT_PB
+
+SUMA_UMO:
+	INC		MES
+	LDS		R16, DMO
+	CPI		R16, 0x01
+	BREQ	SUMA_YMO
+	LDS		R16, UMO
+	INC		R16
+	CPI		R16, 0x0A
+	BREQ	SUMA_DMO
+	STS		UMO, R16
+	RJMP	OUT_PB
+SUMA_DMO:
+	CLR		R16
+	STS		UMO, R16
+	LDS		R16, DMO
+	INC		R16
+	STS		DMO, R16
+	RJMP	OUT_PB
+SUMA_YMO:
+	LDS		R16, UMO
+	INC		R16
+	CPI		R16, 0x03
+	BREQ	OVERFLOW_MESES
+	STS		UMO, R16
+	RJMP	OUT_PB
+OVERFLOW_MESES:
+	CLR		MES
+	LDI		R16, 0x01
+	STS		UMO, R16
+	CLR		R16
+	STS		DMO, R16
+	RJMP	OUT_PB
+
+RES_UMO:
+	DEC		MES
+	LDS		R16, DMO
+	CPI		R16, 0x00
+	BREQ	RES_YMO
+	LDS		R16, UMO
+	DEC		R16
+	CPI		R16, 0xFF
+	BREQ	RES_DMO
+	STS		UMO, R16
+	RJMP	OUT_PB
+RES_DMO:
+	LDI		R16, 0x09
+	STS		UMO, R16
+	LDS		R16, DMO
+	DEC		R16
+	STS		DMO, R16
+	RJMP	OUT_PB
+RES_YMO:
+	LDS		R16, UMO
+	DEC		R16
+	CPI		R16, 0x00
+	BREQ	UNDERFLOW_MESES
+	STS		UMO, R16
+	RJMP	OUT_PB
+UNDERFLOW_MESES:
+	LDI		MES, 0x0C
+	LDI		R16, 0x02
+	STS		UMO, R16
+	LDI		R16, 0x01
+	STS		DMO, R16
+	RJMP	OUT_PB
+
+OUT_PB:
 	POP		R16
 	OUT		SREG, R16
 	POP		R16			// Se saca el valor de r16 y del SREG de la pila
 	RETI
+	
