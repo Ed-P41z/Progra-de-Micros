@@ -2,7 +2,8 @@
 *	Proyecto-1.asm
 *	Creado: 2/24/2025 4:48:35 PM
 *	Autor: Edvin Paiz
-*	Descripción: El proyecto 1 consiste en hacer un reloj digital con varias funciones
+*	Descripción: El proyecto 1 consiste en hacer un reloj digital con alarma que tiene varias funciones. Entre estas funciones
+*	está un modo de hora, un modo de fecha, modos de configuración de hora, fecha y alarma, y un modo de apagado de alarma.
 */
 /*---------------------------------------------------------------------------------------------------*/
 
@@ -43,7 +44,7 @@ ALDHRS:	.byte	1	// Espacio en RAM para guardar decenas de horas de Alarma
 //**************(Segmento donde se guarda el código del funcionamiento del reloj)**************//
 .cseg
 .org	0x0000
-	JMP		SETUP		// Rutina de setup que solo se ejecutará una vez
+	JMP		SETUP		// Rutina de setup (solo se ejecutará una vez)
 
 .org	PCI0addr
 	JMP		PBREAD		//Sub-rutina de interrupción cuando se presionen los botones
@@ -144,17 +145,17 @@ SETUP:
 	STS		ALDMIN, R16
 	STS		ALUHRS, R16
 	STS		ALDHRS, R16
-	LDI		R16, 0x01	// Se carga 1 únicamente a Unidades de día y mes para que no empiecen en 0
+	LDI		R16, 0x01		// Se carga 1 únicamente a Unidades de día y mes para que no empiecen en 0
 	STS		UDAY, R16
 	STS		UMO, R16
-	CLR		COUNT_T0	// Se coloca 0x00 a R17
-	CLR		LEDMODE		// Se coloca 0x00 a R18
+	CLR		COUNT_T0		// Se coloca 0x00 a R17
+	CLR		LEDMODE			// Se coloca 0x00 a R18
 	LDI		PBSTATE, 0xFF	// Se coloca 0xFF a R19
-	CLR		TRDISP		// Se coloca 0x00 a R20
-	LDI		MODE, 0x00	// Se coloca en el primer modo del reloj
-	CLR		MES			// Se coloca el registro que guarda el mes actual en enero
-	CLR		PBACTION	// Se coloca 0x00 a R25
-	CLR		R26			// Se coloca 0x00 a R26
+	CLR		TRDISP			// Se coloca 0x00 a R20
+	LDI		MODE, 0x00		// Se coloca en el primer modo del reloj
+	CLR		MES				// Se coloca el registro que guarda el mes actual en enero
+	CLR		PBACTION		// Se coloca 0x00 a R25
+	CLR		R26				// Se coloca 0x00 a R26
 
 	//*******************(Iniciar Display)*******************//
 	CALL	INICIAR_DISP// Se inicia el display donde se mostrará el contador
