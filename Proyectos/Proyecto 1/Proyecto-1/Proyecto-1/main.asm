@@ -829,7 +829,8 @@ MODO_8:
 	SBI		PINC, PC4		// Se hace toggle al Led
 	RET
 
-SUM_TIMER1:	// Suma del tiempo en el reloj
+	//*******************(Sub-rutina de Suma con Timer1)*******************//
+SUM_TIMER1:	
 	LDS		R16, UMIN
 	INC		R16	
 	CPI		R16, 0x0A		// Se le suma 1 a UMIN y comparamos si hay overflow
@@ -938,19 +939,18 @@ SUM_UMO:
 	STS		DHRS, R16
 	STS		DDAY, R16
 	LDI		R16, 0x01
-	STS		UDAY, R16	// Se reinician los minutos, las horas y UDAY, y se guarda en la RAM
+	STS		UDAY, R16		// Se reinician los minutos, las horas y UDAY, y se guarda en la RAM
 	INC		MES
 	LDS		R16, DMO
 	CPI		R16, 0x01
-	BREQ	SUM_YMO
+	BREQ	SUM_YMO			// Se revisa si las decenas de mes llegaron a 1, si son iguales salta a SUM_YMO
 	LDS		R16, UMO
 	INC		R16
-	CPI		R16, 0x0A
-	BREQ	SUM_DMO
-	STS		UMO, R16
-	CALL	COMPARE_ALARM
+	CPI		R16, 0x0A		
+	BREQ	SUM_DMO			// Se incrementan las unidades de mes, y si hay overflow salta a SUM_DMO
+	STS		UMO, R16		// Se actualiza el valor de UMO en la RAM
+	CALL	COMPARE_ALARM	// Se llama a la sub-rutina de Comparación de Alarma
 	RET
-
 SUM_DMO:
 	CLR		R16
 	STS		UMIN, R16
@@ -959,22 +959,20 @@ SUM_DMO:
 	STS		DHRS, R16
 	STS		UMO, R16
 	LDI		R16, 0x01
-	STS		UDAY, R16	// Se reinician los minutos, las horas y UDAY, y se guarda en la RAM
+	STS		UDAY, R16		// Se reinician los minutos, las horas y UDAY, y se guarda en la RAM
 	LDS		R16, DMO
 	INC		R16
-	STS		DMO, R16
-	CALL	COMPARE_ALARM
+	STS		DMO, R16		// Se incrementa R16(DMO) y se actualiza el valor de DMO en la RAM
+	CALL	COMPARE_ALARM	// Se llama a la sub-rutina de Comparación de Alarma
 	RET
-
 SUM_YMO:
 	LDS		R16, UMO
 	INC		R16
 	CPI		R16, 0x03
-	BREQ	HAPPY_NEW_YEAR
-	STS		UMO, R16
-	CALL	COMPARE_ALARM
+	BREQ	HAPPY_NEW_YEAR	// Se incrementa R16(UMO) y si hay overflow y salta a HAPPY_NEW_YEAR
+	STS		UMO, R16		// Se actualiza el valor de UMO en la RAM
+	CALL	COMPARE_ALARM	// Se llama a la sub-rutina de Comparación de Alarma
 	RET
-
 HAPPY_NEW_YEAR:
 	CLR		R16
 	STS		UMIN, R16
@@ -985,110 +983,114 @@ HAPPY_NEW_YEAR:
 	STS		DMO, R16
 	LDI		R16, 0x01
 	STS		UMO, R16
-	STS		UDAY, R16
-	CLR		MES
-	CALL	COMPARE_ALARM
+	STS		UDAY, R16		// Se reinicia el reloj completo
+	CLR		MES				// Se reinicia el registro que guarda el mes para la lista
+	CALL	COMPARE_ALARM	// Se llama a la sub-rutina de Comparación de Alarma
 	RET
 
-
+	//*******************(Sub-rutina de Suma de Minutos con Botón)*******************//
 SUMA_UMIN:
 	LDS		R16, UMIN
 	INC		R16	
-	CPI		R16, 0x0A	// Se le suma 1 a UMIN y comparamos si hay overflow
-	BREQ	SUMA_DMIN	// Si llega a 10M salta a SUM_DMIN
-	STS		UMIN, R16	// Se actualiza el valor de UMIN en la RAM
+	CPI		R16, 0x0A		// Se le suma 1 a UMIN y comparamos si hay overflow
+	BREQ	SUMA_DMIN		// Si llega a 10M salta a SUMA_DMIN
+	STS		UMIN, R16		// Se actualiza el valor de UMIN en la RAM
 	RET
 SUMA_DMIN:
 	CLR		R16
-	STS		UMIN, R16	// Se reinicia UMIN y se guarda en la RAM
+	STS		UMIN, R16		// Se reinicia UMIN y se guarda en la RAM
 	LDS		R16, DMIN
 	INC		R16
-	CPI		R16, 0x06	// Se le suma 1 a DMIN y comparamos si hay overflow
+	CPI		R16, 0x06		// Se le suma 1 a DMIN y comparamos si hay overflow
 	BREQ	OVERFLOW_MIN	// Si llega a 1H salta a OVERFLOW_MIN
-	STS		DMIN, R16	// Se actualiza el valor de DMIN en la RAM
+	STS		DMIN, R16		// Se actualiza el valor de DMIN en la RAM
 	RET
 OVERFLOW_MIN:
 	CLR		R16
 	STS		UMIN, R16
-	STS		DMIN, R16	// Se reinician los minutos y se guardan los valores en la RAM
+	STS		DMIN, R16		// Se reinician los minutos y se guardan los valores en la RAM
 	RET
 
+	//*******************(Sub-rutina de Resta de Minutos con Botón)*******************//
 RES_UMIN:
 	LDS		R16, UMIN
 	DEC		R16	
-	CPI		R16, 0xFF	// Se le resta 1 a UMIN y comparamos si hay underflow
-	BREQ	RES_DMIN	// Si resta menos de 0M salta a RES_DMIN
-	STS		UMIN, R16	// Se actualiza el valor de UMIN en la RAM
+	CPI		R16, 0xFF		// Se le resta 1 a UMIN y comparamos si hay underflow
+	BREQ	RES_DMIN		// Si resta menos de 0M salta a RES_DMIN
+	STS		UMIN, R16		// Se actualiza el valor de UMIN en la RAM
 	RET
 RES_DMIN:
 	LDI		R16, 0x09
-	STS		UMIN, R16	// Se carga 0x09 a UMIN y se guarda en la RAM
+	STS		UMIN, R16		// Se carga 0x09 a UMIN y se guarda en la RAM
 	LDS		R16, DMIN
 	DEC		R16
-	CPI		R16, 0xFF	// Se le resta 1 a DMIN y comparamos si hay underflow
+	CPI		R16, 0xFF		// Se le resta 1 a DMIN y comparamos si hay underflow
 	BREQ	UNDERFLOW_MIN	// Si llega a menos de 0H salta a UNDERFLOW_MIN
-	STS		DMIN, R16	// Se actualiza el valor de DMIN en la RAM
+	STS		DMIN, R16		// Se actualiza el valor de DMIN en la RAM
 	RET
 UNDERFLOW_MIN:
 	LDI		R16, 0x09
 	STS		UMIN, R16
 	LDI		R16, 0x05
-	STS		DMIN, R16	// Se reinician los minutos y se guardan los valores en la RAM
+	STS		DMIN, R16		// Se reinician los minutos y se guardan los valores en la RAM
 	RET
 
+	//*******************(Sub-rutina de Suma de Horas con Botón)*******************//
 SUMA_UHRS:
 	LDS		R16, DHRS
-	CPI		R16, 0x02	// Se verifica si llegó a 20HRS
-	BREQ	SUMA_24HRS	// Si llegó a 20HRS, salta a SUM_24HRS
+	CPI		R16, 0x02		// Se verifica si llegó a 20HRS
+	BREQ	SUMA_24HRS		// Si llegó a 20HRS, salta a SUMA_24HRS
 	LDS		R16, UHRS
 	INC		R16
-	CPI		R16, 0x0A	// Se le suma 1 a UHRS y comparamos si hay overflow
-	BREQ	SUMA_DHRS	// Si llega a 10H salta a SUM_DHRS
-	STS		UHRS, R16	// Se actualiza el valor de UHRS en la RAM
+	CPI		R16, 0x0A		// Se le suma 1 a UHRS y comparamos si hay overflow
+	BREQ	SUMA_DHRS		// Si llega a 10H salta a SUMA_DHRS
+	STS		UHRS, R16		// Se actualiza el valor de UHRS en la RAM
 	RET
 SUMA_DHRS:
 	CLR		R16
-	STS		UHRS, R16	// Se reinician los minutos y UHRS, y se guarda en la RAM
+	STS		UHRS, R16		// Se reinician los minutos y UHRS, y se guarda en la RAM
 	LDS		R16, DHRS
 	INC		R16
-	STS		DHRS, R16	// Se actualiza el valor de DHRS en la RAM
+	STS		DHRS, R16		// Se actualiza el valor de DHRS en la RAM
 	RET
 SUMA_24HRS:
 	LDS		R16, UHRS
 	INC		R16			
-	CPI		R16, 0x04	// Se le suma 1 a UHRS y comparamos si hay overflow
+	CPI		R16, 0x04		// Se le suma 1 a UHRS y comparamos si hay overflow
 	BREQ	OVERFLOW_HRS	// Si llega a 24H salta a OVERFLOW_HRS
-	STS		UHRS, R16	// Se actualiza el valor de UHRS en la RAM
+	STS		UHRS, R16		// Se actualiza el valor de UHRS en la RAM
 	RET
 OVERFLOW_HRS:
 	CLR		R16
 	STS		UHRS, R16
-	STS		DHRS, R16
+	STS		DHRS, R16		// Se reinician las Horas y se guardan los valores en la RAM
 	RET
 
+	//*******************(Sub-rutina de Resta de Horas con Botón)*******************//
 RES_UHRS:
 	LDS		R16, UHRS
 	DEC		R16
-	CPI		R16, 0xFF	// Se le suma 1 a UHRS y comparamos si hay underflow
-	BREQ	RES_DHRS	// Si llega a 10H salta a SUM_DHRS
-	STS		UHRS, R16	// Se actualiza el valor de UHRS en la RAM
+	CPI		R16, 0xFF		// Se le resta 1 a UHRS y comparamos si hay underflow
+	BREQ	RES_DHRS		// Si resta menos de 0H salta a RES_DHRS
+	STS		UHRS, R16		// Se actualiza el valor de UHRS en la RAM
 	RET
 RES_DHRS:
 	LDI		R16, 0x09
-	STS		UHRS, R16	// Se reinician los minutos y UHRS, y se guarda en la RAM
+	STS		UHRS, R16		// Se carga 0x09 los minutos y UHRS, y se guarda en la RAM
 	LDS		R16, DHRS
 	DEC		R16
 	CPI		R16, 0xFF
-	BREQ	UNDERFLOW_HRS
-	STS		DHRS, R16	// Se actualiza el valor de DHRS en la RAM
+	BREQ	UNDERFLOW_HRS	// Se decrementa DHRS y si hay underflow salta a UNDERFLOW_HRS
+	STS		DHRS, R16		// Se actualiza el valor de DHRS en la RAM
 	RET
 UNDERFLOW_HRS:
 	LDI		R16, 0x03
 	STS		UHRS, R16
 	LDI		R16, 0x02
-	STS		DHRS, R16
+	STS		DHRS, R16		// Se cargan los valores máximos respectivos de las horas a la RAM
 	RET
 
+	//*******************(Sub-rutina de Suma de Días con Botón)*******************//
 SUMA_UDAY:
 	LDS		R16, UDAY
 	LDS		R23, DDAY
@@ -1096,35 +1098,35 @@ SUMA_UDAY:
 	LSL		R23
 	LSL		R23
 	LSL		R23
-	ADD		R23, R16	// Se sacan los valores de UDAY y DDAY y se suman en un registro
+	ADD		R23, R16			// Se sacan los valores de UDAY y DDAY y se suman en un registro
 	LDI		ZL, LOW(Meses << 1)  
 	LDI		ZH, HIGH(Meses << 1)  
 	ADD		ZL, MES
-	LPM		R16, Z		// Se saca el valor de la cantidad de días que tiene el Mes actual
+	LPM		R16, Z				// Se saca el valor de la cantidad de días que tiene el Mes actual
 	CP		R23, R16
-	BREQ	OVERFLOW_DIA	// Se comparan los valores de días actuales con los días del mes, si son iguales salta a SUM_MDAY
+	BREQ	OVERFLOW_DIA		// Se comparan los valores de días actuales con los días del mes, si son iguales salta a SUMA_MDAY
 	LDS		R16, UDAY
 	INC		R16
-	CPI		R16, 0x0A	// Se le suma 1 a UDAY y comparamos si hay overflow
-	BREQ	SUMA_DDAY	// Si llega a 10D salta a SUM_DDAY
-	STS		UDAY, R16	// Se actualiza el valor de DDAY en la RAM
+	CPI		R16, 0x0A			// Se le suma 1 a UDAY y comparamos si hay overflow
+	BREQ	SUMA_DDAY			// Si llega a 10D salta a SUMA_DDAY
+	STS		UDAY, R16			// Se actualiza el valor de DDAY en la RAM
 	RET
 SUMA_DDAY:
 	CLR		R16
-	STS		UDAY, R16	// Se reinicia UDAY y se guarda en la RAM
+	STS		UDAY, R16			// Se reinicia UDAY y se guarda en la RAM
 	LDS		R16, UDAY
 	LDS		R23, DDAY
 	LSL		R23
 	LSL		R23
 	LSL		R23
 	LSL		R23
-	ADD		R23, R16	// Se sacan los valores de UDAY y DDAY y se suman en un registro
+	ADD		R23, R16			// Se sacan los valores de UDAY y DDAY y se suman en un registro
 	LDI		ZL, LOW(Meses << 1)  
 	LDI		ZH, HIGH(Meses << 1)  
 	ADD		ZL, MES
-	LPM		R16, Z		// Se saca el valor de la cantidad de días que tiene el Mes actual
+	LPM		R16, Z				// Se saca el valor de la cantidad de días que tiene el Mes actual
 	CP		R23, R16
-	BREQ	OVERFLOW_DIA	// Se comparan los valores de días actuales con los días del mes, si son iguales salta a SUM_MDAY
+	BREQ	OVERFLOW_DIA		// Se comparan los valores de días actuales con los días del mes, si son iguales salta a OVERFLOW_DIA
 	LDS		R16, DDAY
 	INC		R16
 	STS		DDAY, R16
@@ -1133,334 +1135,342 @@ OVERFLOW_DIA:
 	LDI		R16, 0x01
 	STS		UDAY, R16
 	CLR		R16
-	STS		DDAY, R16
+	STS		DDAY, R16			//	Se reinician los vaores de los días en la RAM
 	RET
 
+	//*******************(Sub-rutina de Resta de Días con Botón)*******************//
 RES_UDAY:
 	LDS		R16, DDAY
 	CPI		R16, 0x00
-	BREQ	RES_MDAY
+	BREQ	RES_MDAY			// Se verifica si el valor de DDAY es 0 y salta a RES_MDAY
 	LDS		R16, UDAY
 	DEC		R16
-	CPI		R16, 0xFF	// Se le suma 1 a UDAY y comparamos si hay overflow
-	BREQ	RES_DDAY	// Si llega a 10D salta a SUM_DDAY
-	STS		UDAY, R16	// Se actualiza el valor de DDAY en la RAM
+	CPI		R16, 0xFF			// Se decrementa UDAY y comparamos si hay underflow
+	BREQ	RES_DDAY			// Si resta menos de 0D salta a RES_DDAY
+	STS		UDAY, R16			// Se actualiza el valor de DDAY en la RAM
 	RET
 RES_DDAY:
 	LDI		R16, 0x09
-	STS		UDAY, R16
+	STS		UDAY, R16			// Se carga 0x09 a UDAY y se guarda en la RAM
 	LDS		R16, DDAY
-	DEC		R16
-	STS		DDAY, R16
+	DEC		R16					// Se decrementa DDAY
+	STS		DDAY, R16			// Se actualiza el valor de DDAY en la RAM
 	RET
 RES_MDAY:
 	LDS		R16, UDAY
 	DEC		R16
-	CPI		R16, 0x00
-	BREQ	UNDERFLOW_DIA
-	STS		UDAY, R16
+	CPI		R16, 0x00			// Se decrementa el valor de las unidades de día
+	BREQ	UNDERFLOW_DIA		// Si hay underflow, salta a UNDERFLOW_DIA
+	STS		UDAY, R16			// Se actualiza el valor de UDAY en la RAM
 	RET
 UNDERFLOW_DIA:
 	LDI		ZL, LOW(Meses << 1)  
 	LDI		ZH, HIGH(Meses << 1)  
 	ADD		ZL, MES
 	LPM		R16, Z
-	MOV		R23, R16
+	MOV		R23, R16			// Se carga el valor de los días del mes en R16 y se mueve a R23
 	LSR		R23
 	LSR		R23
 	LSR		R23
-	LSR		R23
-	STS		DDAY, R23
-	ANDI	R16, 0x0F
-	STS		UDAY, R16
+	LSR		R23					// Se corre a la derecha R23 4 veces para tener únicamente el valor de DDAY
+	STS		DDAY, R23			// Se actualiza el valor de DDAY en la RAM
+	ANDI	R16, 0x0F			// Se hace un ANDI a R16 para tener únicamente el valor de UDAY
+	STS		UDAY, R16			// Se actualiza el valor de UDAY en la RAM
 	RET
 
+	//*******************(Sub-rutina de Suma de Meses con Botón)*******************//
 SUMA_UMO:
-	INC		MES
+	INC		MES					// Se incrementa el valor del MES a utilizar
 	LDS		R16, DMO
-	CPI		R16, 0x01
-	BREQ	SUMA_YMO
-	LDS		R16, UMO
+	CPI		R16, 0x01			
+	BREQ	SUMA_YMO			// Se verifica si el valor de DMO es 1 y si son iguales salta a SUMA_YMO 
+	LDS		R16, UMO			
 	INC		R16
-	CPI		R16, 0x0A
-	BREQ	SUMA_DMO
-	STS		UMO, R16
+	CPI		R16, 0x0A			
+	BREQ	SUMA_DMO			// Se incrementa UMO y si hay overflow salta a SUMA_DMO
+	STS		UMO, R16			// Se actualiza el valor de UMO en la RAM
 	RET
 SUMA_DMO:
 	CLR		R16
-	STS		UMO, R16
+	STS		UMO, R16			// Se reinicia el valor de UMO
 	LDS		R16, DMO
-	INC		R16
-	STS		DMO, R16
+	INC		R16					// Se incrementa DMO
+	STS		DMO, R16			// Se actualiza el valor de DMO en la RAM
 	RET
 SUMA_YMO:
 	LDS		R16, UMO
 	INC		R16
-	CPI		R16, 0x03
-	BREQ	OVERFLOW_MESES
-	STS		UMO, R16
-	RET
+	CPI		R16, 0x03		
+	BREQ	OVERFLOW_MESES		// Se incrementa UMO y si es igual a 0x03 salta a OVERFLOW_MESES
+	STS		UMO, R16			// Se actualiza el valor de UMO en la RAM
+	RET		
 OVERFLOW_MESES:
 	CLR		MES
 	LDI		R16, 0x01
 	STS		UMO, R16
 	CLR		R16
-	STS		DMO, R16
+	STS		DMO, R16			// Se reinician los valores de los meses
 	RET
 
+	//*******************(Sub-rutina de Resta de Meses con Botón)*******************//
 RES_UMO:
-	DEC		MES
+	DEC		MES					// Se decrementa el valor del MES a utilizar
 	LDS		R16, DMO
-	CPI		R16, 0x00
-	BREQ	RES_YMO
+	CPI		R16, 0x00	
+	BREQ	RES_YMO				// Se verifica si el valor de DMO es 0x00 y si es igual salta a RES_YMO
 	LDS		R16, UMO
 	DEC		R16
-	CPI		R16, 0xFF
-	BREQ	RES_DMO
-	STS		UMO, R16
+	CPI		R16, 0xFF			// Se decrementa UMO y se verifica si hay underflow
+	BREQ	RES_DMO				// Si hay underflow salta a RES_DMO
+	STS		UMO, R16			// Se actualiza el valor de UMO en la RAM
 	RET
 RES_DMO:
 	LDI		R16, 0x09
-	STS		UMO, R16
+	STS		UMO, R16			// Se carga 0x09 a UMO en la RAM
 	LDS		R16, DMO
-	DEC		R16
-	STS		DMO, R16
+	DEC		R16					// Se decrementa DMO
+	STS		DMO, R16			// Se actualiza el valor de DMO en la RAM
 	RET
 RES_YMO:
 	LDS		R16, UMO
 	DEC		R16
 	CPI		R16, 0x00
-	BREQ	UNDERFLOW_MESES
-	STS		UMO, R16
+	BREQ	UNDERFLOW_MESES		// Se decrementa UMO y si hay underflow (menos de 1) salta a UNDERFLOW_MESES
+	STS		UMO, R16			// Se actualiza el valor de UMO en la RAM
 	RET
 UNDERFLOW_MESES:
 	LDI		MES, 0x0C
 	LDI		R16, 0x02
 	STS		UMO, R16
 	LDI		R16, 0x01
-	STS		DMO, R16
+	STS		DMO, R16			// Se colocan los valores máximos respectivos de los meses
 	RET
 
+	//*******************(Sub-rutina de Suma de Minutos de Alarma con Botón)*******************//
 SUMA_ALUMIN:
 	LDS		R16, ALUMIN
 	INC		R16	
-	CPI		R16, 0x0A	// Se le suma 1 a UMIN y comparamos si hay overflow
-	BREQ	SUMA_ALDMIN	// Si llega a 10M salta a SUM_DMIN
-	STS		ALUMIN, R16	// Se actualiza el valor de UMIN en la RAM
+	CPI		R16, 0x0A		// Se le suma 1 a ALUMIN y comparamos si hay overflow
+	BREQ	SUMA_ALDMIN		// Si llega a 10M salta a SUM_ALDMIN
+	STS		ALUMIN, R16		// Se actualiza el valor de UMIN en la RAM
 	RET
 SUMA_ALDMIN:
 	CLR		R16
-	STS		ALUMIN, R16	// Se reinicia UMIN y se guarda en la RAM
+	STS		ALUMIN, R16		// Se reinicia ALUMIN y se guarda en la RAM
 	LDS		R16, ALDMIN
 	INC		R16
-	CPI		R16, 0x06	// Se le suma 1 a DMIN y comparamos si hay overflow
-	BREQ	OVERFLOW_ALMIN	// Si llega a 1H salta a OVERFLOW_MIN
-	STS		ALDMIN, R16	// Se actualiza el valor de DMIN en la RAM
+	CPI		R16, 0x06		// Se le suma 1 a ALDMIN y comparamos si hay overflow
+	BREQ	OVERFLOW_ALMIN	// Si llega a 1H salta a OVERFLOW_ALMIN
+	STS		ALDMIN, R16		// Se actualiza el valor de ALDMIN en la RAM
 	RET
 OVERFLOW_ALMIN:
 	CLR		R16
 	STS		ALUMIN, R16
-	STS		ALDMIN, R16	// Se reinician los minutos y se guardan los valores en la RAM
+	STS		ALDMIN, R16		// Se reinician los minutos y se guardan los valores en la RAM
 	RET
 
+	//*******************(Sub-rutina de Resta de Minutos de Alarma con Botón)*******************//
 RES_ALUMIN:
 	LDS		R16, ALUMIN
 	DEC		R16	
-	CPI		R16, 0xFF	// Se le resta 1 a UMIN y comparamos si hay underflow
-	BREQ	RES_ALDMIN	// Si resta menos de 0M salta a RES_DMIN
-	STS		ALUMIN, R16	// Se actualiza el valor de UMIN en la RAM
+	CPI		R16, 0xFF		// Se le resta 1 a ALUMIN y comparamos si hay underflow
+	BREQ	RES_ALDMIN		// Si resta menos de 0M salta a RES_ALDMIN
+	STS		ALUMIN, R16		// Se actualiza el valor de UMIN en la RAM
 	RET
 RES_ALDMIN:
 	LDI		R16, 0x09
-	STS		ALUMIN, R16	// Se carga 0x09 a UMIN y se guarda en la RAM
+	STS		ALUMIN, R16		// Se carga 0x09 a ALUMIN y se guarda en la RAM
 	LDS		R16, ALDMIN
 	DEC		R16
-	CPI		R16, 0xFF	// Se le resta 1 a DMIN y comparamos si hay underflow
-	BREQ	UNDERFLOW_ALMIN	// Si llega a menos de 0H salta a UNDERFLOW_MIN
-	STS		ALDMIN, R16	// Se actualiza el valor de DMIN en la RAM
+	CPI		R16, 0xFF		// Se le resta 1 a ALDMIN y comparamos si hay underflow
+	BREQ	UNDERFLOW_ALMIN	// Si llega a menos de 0H salta a UNDERFLOW_ALMIN
+	STS		ALDMIN, R16		// Se actualiza el valor de ALDMIN en la RAM
 	RET
 UNDERFLOW_ALMIN:
 	LDI		R16, 0x09
 	STS		ALUMIN, R16
 	LDI		R16, 0x05
-	STS		ALDMIN, R16	// Se reinician los minutos y se guardan los valores en la RAM
+	STS		ALDMIN, R16		// Se reinician los minutos y se guardan los valores en la RAM
 	RET
 
+	//*******************(Sub-rutina de Suma de Horas de Alarma con Botón)*******************//
 SUMA_ALUHRS:
 	LDS		R16, ALDHRS
-	CPI		R16, 0x02	// Se verifica si llegó a 20HRS
-	BREQ	SUMA_AL24HRS	// Si llegó a 20HRS, salta a SUM_24HRS
+	CPI		R16, 0x02		// Se verifica si llegó a 20HRS
+	BREQ	SUMA_AL24HRS	// Si llegó a 20HRS, salta a SUM_AL24HRS
 	LDS		R16, ALUHRS
 	INC		R16
-	CPI		R16, 0x0A	// Se le suma 1 a UHRS y comparamos si hay overflow
-	BREQ	SUMA_ALDHRS	// Si llega a 10H salta a SUM_DHRS
-	STS		ALUHRS, R16	// Se actualiza el valor de UHRS en la RAM
+	CPI		R16, 0x0A		// Se le suma 1 a ALUHRS y comparamos si hay overflow
+	BREQ	SUMA_ALDHRS		// Si llega a 10H salta a SUM_ALDHRS
+	STS		ALUHRS, R16		// Se actualiza el valor de ALUHRS en la RAM
 	RET
 SUMA_ALDHRS:
 	CLR		R16
-	STS		ALUHRS, R16	// Se reinician los minutos y UHRS, y se guarda en la RAM
+	STS		ALUHRS, R16		// Se reinician los minutos y ALUHRS, y se guarda en la RAM
 	LDS		R16, ALDHRS
 	INC		R16
-	STS		ALDHRS, R16	// Se actualiza el valor de DHRS en la RAM
+	STS		ALDHRS, R16		// Se actualiza el valor de ALDHRS en la RAM
 	RET
 SUMA_AL24HRS:
 	LDS		R16, ALUHRS
 	INC		R16			
-	CPI		R16, 0x04	// Se le suma 1 a UHRS y comparamos si hay overflow
-	BREQ	OVERFLOW_ALHRS	// Si llega a 24H salta a OVERFLOW_HRS
-	STS		ALUHRS, R16	// Se actualiza el valor de UHRS en la RAM
+	CPI		R16, 0x04		// Se le suma 1 a ALUHRS y comparamos si hay overflow
+	BREQ	OVERFLOW_ALHRS	// Si llega a 24H salta a OVERFLOW_ALHRS
+	STS		ALUHRS, R16		// Se actualiza el valor de ALUHRS en la RAM
 	RET
 OVERFLOW_ALHRS:
 	CLR		R16
 	STS		ALUHRS, R16
-	STS		ALDHRS, R16
+	STS		ALDHRS, R16		// Se reinician las horas y se guardan en la RAM
 	RET
 
+	//*******************(Sub-rutina de Resta de Horas de Alarma con Botón)*******************//
 RES_ALUHRS:
 	LDS		R16, ALUHRS
 	DEC		R16
-	CPI		R16, 0xFF	// Se le suma 1 a UHRS y comparamos si hay underflow
-	BREQ	RES_ALDHRS	// Si llega a 10H salta a SUM_DHRS
-	STS		ALUHRS, R16	// Se actualiza el valor de UHRS en la RAM
+	CPI		R16, 0xFF		// Se le resta 1 a ALUHRS y comparamos si hay underflow
+	BREQ	RES_ALDHRS		// Si la resta pasa 0H salta a SUM_ALDHRS
+	STS		ALUHRS, R16		// Se actualiza el valor de ALUHRS en la RAM
 	RET
 RES_ALDHRS:
 	LDI		R16, 0x09
-	STS		ALUHRS, R16	// Se reinician los minutos y UHRS, y se guarda en la RAM
+	STS		ALUHRS, R16		// Se carga 0x09 a ALUHRS, y se guarda en la RAM
 	LDS		R16, ALDHRS
 	DEC		R16
 	CPI		R16, 0xFF
-	BREQ	UNDERFLOW_ALHRS
-	STS		ALDHRS, R16	// Se actualiza el valor de DHRS en la RAM
+	BREQ	UNDERFLOW_ALHRS	// Se decrementa ALDHRS y se verifica si hay underflow
+	STS		ALDHRS, R16		// Se actualiza el valor de ALDHRS en la RAM
 	RET
 UNDERFLOW_ALHRS:
 	LDI		R16, 0x03
 	STS		ALUHRS, R16
 	LDI		R16, 0x02
-	STS		ALDHRS, R16
+	STS		ALDHRS, R16		// Se colocan los valores máximos respectivos para las horas
 	RET
 
 /*---------------------------------------------------------------------------------------------------*/
-// Sub-rutina de interrupcion
-// Sub-rutina de interrupcion para mostrar displays
+//*******************(Sub-rutinas de Interrupción)*******************//
+
+	//*******************(Sub-rutina de Interrupción del Timer0 [Overflow])*******************//
 TMR0_OV:
 	PUSH	R16
 	IN		R16, SREG
-	PUSH	R16			// Se guarda el valor de r16 y del SREG en la pila
+	PUSH	R16				// Se guarda el valor de r16 y del SREG en la pila
 
-	SBI		TIFR0, TOV0	// Si está encendida la bandera de overflow, salta a apagarla
+	SBI		TIFR0, TOV0		// Si está encendida la bandera de overflow, salta a apagarla
 	LDI		R16, T0VALUE
-	OUT		TCNT0, R16	// Se vuelve a cargar un valor inicial a Timer0 
+	OUT		TCNT0, R16		// Se vuelve a cargar un valor inicial a Timer0 
 	INC		COUNT_T0
-	CPI		COUNT_T0, 0x04
-	BREQ	OVERFLOW_CT0
+	CPI		COUNT_T0, 0x04	// Se incrementa COUNT_T0 y se compara con 0x04
+	BREQ	OVERFLOW_CT0	// Si son iguales salta a OVERFLOW_CT0
 	RJMP	EXIT_TMR0
 
 OVERFLOW_CT0:
-	CLR		COUNT_T0
-	RJMP	EXIT_TMR0
+	CLR		COUNT_T0		// Reinicia el valor de COUNT_T0
+	RJMP	EXIT_TMR0		// Salta a salir de la interrupción
 
 EXIT_TMR0:
 	POP		R16
 	OUT		SREG, R16
-	POP		R16			// Se saca el valor de r16 y del SREG de la pila
+	POP		R16				// Se saca el valor de r16 y del SREG de la pila
 	RETI
 
 
-// Sub-rutina de interrupcion para suma de tiempo de reloj
+	//*******************(Sub-rutina de Interrupción del Timer1 [Overflow])*******************//
 TMR1_OV:
 	PUSH	R16
 	IN		R16, SREG
-	PUSH	R16			// Se guarda el valor de R16 y del SREG en la pila
+	PUSH	R16				// Se guarda el valor de R16 y del SREG en la pila
 
-	SBI		TIFR1, TOV1	// Si está encendida la bandera de overflow, salta a apagarla
+	SBI		TIFR1, TOV1		// Si está encendida la bandera de overflow, salta a apagarla
 	LDI		R16, T1HVALUE
-	STS		TCNT1H, R16	// Se vuelve a cargar un valor inicial a Timer1H
+	STS		TCNT1H, R16		// Se vuelve a cargar un valor inicial a Timer1H
 	LDI		R16, T1LVALUE
-	STS		TCNT1L, R16 // Se vuelve a cargar un valor inicial a Timer1L
+	STS		TCNT1L, R16		// Se vuelve a cargar un valor inicial a Timer1L
 	LDI		R26, 0x01
 
 	POP		R16
 	OUT		SREG, R16
-	POP		R16			// Se saca el valor de r16 y del SREG de la pila
+	POP		R16				// Se saca el valor de r16 y del SREG de la pila
 	RETI
 
 
-// Sub-rutina de interrupcion para overflow del Timer2
+	//*******************(Sub-rutina de Interrupción del Timer2 [Overflow])*******************//
 TMR2_OV:
 	PUSH	R16
 	IN		R16, SREG
-	PUSH	R16			// Se guarda el valor de r16 y del SREG en la pila
+	PUSH	R16				// Se guarda el valor de r16 y del SREG en la pila
 
-	SBI		TIFR2, TOV2	// Si está encendida la bandera de overflow, salta a apagarla
+	SBI		TIFR2, TOV2		// Si está encendida la bandera de overflow, salta a apagarla
 	LDI		R16, T2VALUE
-	STS		TCNT2, R16	// Se vuelve a cargar un valor inicial a Timer0 
+	STS		TCNT2, R16		// Se vuelve a cargar un valor inicial a Timer0 
 	INC		COUNT_T2
-	CPI		COUNT_T2, 50
-	BREQ	TOGGLE_LEDS
-	RJMP	OUT_TMR2
+	CPI		COUNT_T2, 50	// Se suma COUNT_T2 y se compara con 50 para que pasen 500ms
+	BREQ	TOGGLE_LEDS		// Cuando pasan 500ms salta a hacerle toggle a los Leds
+	RJMP	OUT_TMR2		// Salta a salir de la interrupción
 TOGGLE_LEDS:
-	SBI		PINC, PC5
-	CLR		COUNT_T2
+	SBI		PINC, PC5		// Se hace toggle a PC5
+	CLR		COUNT_T2		// Se reinicia el valor de COUNT_T2
 	CPI		MODE, 0x08
-	BREQ	MODO_9
-	RJMP	OUT_TMR2
+	BREQ	MODO_9			// Se verifica si está en el modo de apagado de alarma
+	RJMP	OUT_TMR2		// Salta a salir de la interrupción
 MODO_9:
 	SBI		PINC, PC4
 	SBI		PINB, PB4
-	SBI		PINB, PB3
-	RJMP	OUT_TMR2
+	SBI		PINB, PB3		// Si está en el modo de apagar alarma, los leds de modo parpadean
+	RJMP	OUT_TMR2		// Salta a salir de la interrupción
 
 OUT_TMR2:
 	POP		R16
 	OUT		SREG, R16
-	POP		R16			// Se saca el valor de r16 y del SREG de la pila
+	POP		R16				// Se saca el valor de r16 y del SREG de la pila
 	RETI
 
 
-// Sub-rutina de interrupcion para detectar botones
+	//*******************(Sub-rutina de Interrupción de Pin-Change [PB0-PB2])*******************//
 PBREAD:
 	PUSH	R16
 	IN		R16, SREG
-	PUSH	R16			// Se guarda el valor de r16 y del SREG en la pila
+	PUSH	R16				// Se guarda el valor de r16 y del SREG en la pila
 
-	IN		R16, PINB	// Se guarda el estado de PORTB en R16
-	MOV		R27, R16
-	EOR		R27, PBSTATE
-	SBRC	R27, PB0	// Si el bit de PB0 cambió
-	RJMP	ACTION_PB1
+	IN		R16, PINB		// Se guarda el estado de PORTB en R16
+	MOV		R27, R16		
+	EOR		R27, PBSTATE	// Se mueve el valor de R16 a R27 y se hace un XOR para verificar cambio en pines
+	SBRC	R27, PB0		
+	RJMP	ACTION_PB1		// Si cambió PB0 salta a verificar si el botón está presionado
 	SBRC	R27, PB1
-	RJMP	ACTION_PB2
+	RJMP	ACTION_PB2		// Si cambió PB1 salta a verificar si el botón está presionado
 	SBRC	R27, PB2
-	RJMP	ACTION_PB3
+	RJMP	ACTION_PB3		// Si cambió PB2 salta a verificar si el botón está presionado
 	
-	RJMP	OUT_PB
+	RJMP	OUT_PB			// Salta a salir de la interrupción
 
 ACTION_PB1:
-	SBIS	PINB, PB0	// Y está presionado (0 lógico)
-	RJMP	READ_PB0
-	RJMP	OUT_PB
+	SBIS	PINB, PB0		// Se verifica si el botón está presionado
+	RJMP	READ_PB0		// Si se presiona el botón salta a la acción a realizar
+	RJMP	OUT_PB			// Salta a salir de la interrupción
 
 ACTION_PB2:
-	SBIS	PINB, PB1
-	RJMP	READ_PB1
-	RJMP	OUT_PB
+	SBIS	PINB, PB1		// Se verifica si el botón está presionado
+	RJMP	READ_PB1		// Si se presiona el botón salta a la acción a realizar
+	RJMP	OUT_PB			// Salta a salir de la interrupción
 
 ACTION_PB3:
-	SBIS	PINB, PB2
-	RJMP	READ_PB2
-	RJMP	OUT_PB
+	SBIS	PINB, PB2		// Se verifica si el botón está presionado
+	RJMP	READ_PB2		// Si se presiona el botón salta a la acción a realizar
+	RJMP	OUT_PB			// Salta a salir de la interrupción
 
 READ_PB0:
-	LDI		PBACTION, 0x01
-	RJMP	OUT_PB
+	LDI		PBACTION, 0x01	// Activa la bandera de acción de PB0
+	RJMP	OUT_PB			// Salta a salir de la interrupción
 
 READ_PB1:
-	LDI		PBACTION, 0x02
-	RJMP	OUT_PB
+	LDI		PBACTION, 0x02	// Activa la bandera de acción de PB0
+	RJMP	OUT_PB			// Salta a salir de la interrupción
 
 READ_PB2:
-	LDI		PBACTION, 0x03
-	RJMP	OUT_PB
+	LDI		PBACTION, 0x03	// Activa la bandera de acción de PB0
+	RJMP	OUT_PB			// Salta a salir de la interrupción
 
 
 OUT_PB:
