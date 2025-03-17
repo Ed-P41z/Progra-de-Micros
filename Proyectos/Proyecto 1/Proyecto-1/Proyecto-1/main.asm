@@ -214,322 +214,324 @@ RJMP	MAIN		// Regresa a Main
 /*---------------------------------------------------------------------------------------------------*/
 //*******************(Sub-rutinas de Modos)*******************//
 
-// Modo de Hora
+
+	//*******************(Sub-rutina de Hora)*******************//
 MODE_HORA:
 	LDI		R16, (1 << TOIE1)
 	STS		TIMSK1, R16		// Se habilitan las interrupciones del Timer1
 	CPI		R26, 0x01
-	BREQ	ENABLE_SUM
+	BREQ	ENABLE_SUM		// Se verica si la bandera de la suma de Timer1 está encendida (1 minuto)
 	CPI		COUNT_T0, 0x00
-	BREQ	U_MIN
+	BREQ	U_MIN			// Se verifica si el contador del Timer0 mostrará unidades de minutos
 	CPI		COUNT_T0, 0x01
-	BREQ	D_MIN
+	BREQ	D_MIN			// Se verifica si el contador del Timer0 mostrará decenas de minutos
 	CPI		COUNT_T0, 0x02
-	BREQ	U_HRS
+	BREQ	U_HRS			// Se verifica si el contador del Timer0 mostrará unidades de horas
 	CPI		COUNT_T0, 0x03
-	BREQ	D_HRS
-	RJMP	MAIN
+	BREQ	D_HRS			// Se verifica si el contador del Timer0 mostrará decenas de horas
+	RJMP	MAIN			// Regresa a Main
 
 ENABLE_SUM:
-	CLR		R26
-	CALL	SUM_TIMER1
-	RJMP	MAIN
+	CLR		R26			// Se apaga la bandera de la suma de Timer1
+	CALL	SUM_TIMER1	// Se llama la suma del Timer1
+	RJMP	MAIN		// Regresa a Main
 
 U_MIN:
-	LDI		COUNT_T0, 0x01
-	CALL	TR1_TIME
-	RJMP	MAIN
+	LDI		COUNT_T0, 0x01	// Se carga un nuevo valor al contador de Timer0 para que muestre el siguiente dígito
+	CALL	TR1_TIME		// Se llama a la sub-rutina del muestreo de unidades de minutos
+	RJMP	MAIN			// Regresa a Main
 	
 D_MIN:
-	LDI		COUNT_T0, 0x02
-	CALL	TR2_TIME
-	RJMP	MAIN
+	LDI		COUNT_T0, 0x02	// Se carga un nuevo valor al contador de Timer0 para que muestre el siguiente dígito
+	CALL	TR2_TIME		// Se llama a la sub-rutina del muestreo de decenas de minutos
+	RJMP	MAIN			// Regresa a Main
 
 U_HRS:
-	LDI		COUNT_T0, 0x03
-	CALL	TR3_TIME
-	RJMP	MAIN
+	LDI		COUNT_T0, 0x03	// Se carga un nuevo valor al contador de Timer0 para que muestre el siguiente dígito
+	CALL	TR3_TIME		// Se llama a la sub-rutina del muestreo de unidades de horas
+	RJMP	MAIN			// Regresa a Main
 
 D_HRS:
-	LDI		COUNT_T0, 0x00
-	CALL	TR4_TIME
-	RJMP	MAIN
+	LDI		COUNT_T0, 0x00	// Se carga un nuevo valor al contador de Timer0 para que muestre el siguiente dígito
+	CALL	TR4_TIME		// Se llama a la sub-rutina del muestreo de decenas de horas
+	RJMP	MAIN			// Regresa a Main
 
-
-// Modo de Fecha
+	//*******************(Sub-rutina de Fecha)*******************//
 MODE_FECHA:
-	CPI		R26, 0x01
-	BREQ	ENABLE_SUMA
+	CPI		R26, 0x01		
+	BREQ	ENABLE_SUMA		// Se verica si la bandera de la suma de Timer1 está encendida (1 minuto)
 	CPI		COUNT_T0, 0x00
-	BREQ	U_DAY
+	BREQ	U_DAY			// Se verifica si el contador del Timer0 mostrará unidades de día
 	CPI		COUNT_T0, 0x01
-	BREQ	D_DAY
+	BREQ	D_DAY			// Se verifica si el contador del Timer0 mostrará decenas de día
 	CPI		COUNT_T0, 0x02
-	BREQ	U_MO
+	BREQ	U_MO			// Se verifica si el contador del Timer0 mostrará unidades de mes
 	CPI		COUNT_T0, 0x03
-	BREQ	D_MO
-	RJMP	MAIN
+	BREQ	D_MO			// Se verifica si el contador del Timer0 mostrará decenas de mes
+	RJMP	MAIN			// Regresa a Main
 
 ENABLE_SUMA:
-	CLR		R26
-	CALL	SUM_TIMER1
-	RJMP	MAIN
+	CLR		R26			// Se apaga la bandera de la suma de Timer1
+	CALL	SUM_TIMER1	// Se llama la suma del Timer1
+	RJMP	MAIN		// Regresa a Main
 
 U_DAY:
-	LDI		COUNT_T0, 0x01
-	CALL	TR1_DATE
-	RJMP	MAIN
+	LDI		COUNT_T0, 0x01	// Se carga un nuevo valor al contador de Timer0 para que muestre el siguiente dígito
+	CALL	TR1_DATE		// Se llama a la sub-rutina del muestreo de unidades de día
+	RJMP	MAIN			// Regresa a Main
 	
 D_DAY:
-	LDI		COUNT_T0, 0x02
-	CALL	TR2_DATE
-	RJMP	MAIN
+	LDI		COUNT_T0, 0x02	// Se carga un nuevo valor al contador de Timer0 para que muestre el siguiente dígito
+	CALL	TR2_DATE		// Se llama a la sub-rutina del muestreo de decenas de día
+	RJMP	MAIN			// Regresa a Main
 
 U_MO:
-	LDI		COUNT_T0, 0x03
-	CALL	TR3_DATE
-	RJMP	MAIN
+	LDI		COUNT_T0, 0x03	// Se carga un nuevo valor al contador de Timer0 para que muestre el siguiente dígito
+	CALL	TR3_DATE		// Se llama a la sub-rutina del muestreo de unidades de mes
+	RJMP	MAIN			// Regresa a Main
 
 D_MO:
-	LDI		COUNT_T0, 0x00
-	CALL	TR4_DATE
-	RJMP	MAIN
+	LDI		COUNT_T0, 0x00	// Se carga un nuevo valor al contador de Timer0 para que muestre el siguiente dígito
+	CALL	TR4_DATE		// Se llama a la sub-rutina del muestreo de decenas de mes
+	RJMP	MAIN			// Regresa a Main
 
 
-// Modo de configuración de minutos
+	//*******************(Sub-rutina de Configuración de Minutos)*******************//
 MODE_CONFIG_MIN:
 	CLR		R16
-	STS		TIMSK1, R16		// Se deshabilitan las interrupciones del Timer1
+	STS		TIMSK1, R16			// Se deshabilitan las interrupciones del Timer1
 	CPI		PBACTION, 0x02
-	BREQ	REALIZA_SUMA_MIN
+	BREQ	REALIZA_SUMA_MIN	// Se verifica si la bandera de suma del botón está encendida
 	CPI		PBACTION, 0x03
-	BREQ	REALIZA_RESTA_MIN
-	CPI		COUNT_T0, 0x00
-	BREQ	U_MIN1
+	BREQ	REALIZA_RESTA_MIN	// Se verifica si la bandera de resta del botón está encendida
+	CPI		COUNT_T0, 0x00	
+	BREQ	U_MIN1				// Se verifica si el contador del Timer0 mostrará unidades de minutos
 	CPI		COUNT_T0, 0x01
-	BREQ	D_MIN1
+	BREQ	D_MIN1				// Se verifica si el contador del Timer0 mostrará decenas de minutos
 	CPI		COUNT_T0, 0x02
-	BREQ	U_HRS1
+	BREQ	U_HRS1				// Se verifica si el contador del Timer0 mostrará unidades de horas
 	CPI		COUNT_T0, 0x03
-	BREQ	D_HRS1
-	RJMP	MAIN
+	BREQ	D_HRS1				// Se verifica si el contador del Timer0 mostrará decenas de horas
+	RJMP	MAIN				// Regresa a Main
 
 U_MIN1:
-	LDI		COUNT_T0, 0x01
-	CALL	TR1_TIME
-	RJMP	MAIN
+	LDI		COUNT_T0, 0x01	// Se carga un nuevo valor al contador de Timer0 para que muestre el siguiente dígito
+	CALL	TR1_TIME		// Se llama a la sub-rutina del muestreo de unidades de minutos
+	RJMP	MAIN			// Regresa a Main
 	
 D_MIN1:
-	LDI		COUNT_T0, 0x02
-	CALL	TR2_TIME
-	RJMP	MAIN
+	LDI		COUNT_T0, 0x02	// Se carga un nuevo valor al contador de Timer0 para que muestre el siguiente dígito
+	CALL	TR2_TIME		// Se llama a la sub-rutina del muestreo de decenas de minutos
+	RJMP	MAIN			// Regresa a Main
 
 U_HRS1:
-	LDI		COUNT_T0, 0x03
-	CALL	TR3_TIME
-	RJMP	MAIN
+	LDI		COUNT_T0, 0x03	// Se carga un nuevo valor al contador de Timer0 para que muestre el siguiente dígito
+	CALL	TR3_TIME		// Se llama a la sub-rutina del muestreo de unidades de horas
+	RJMP	MAIN			// Regresa a Main
 
 D_HRS1:
-	LDI		COUNT_T0, 0x00
-	CALL	TR4_TIME
-	RJMP	MAIN
+	LDI		COUNT_T0, 0x00	// Se carga un nuevo valor al contador de Timer0 para que muestre el siguiente dígito
+	CALL	TR4_TIME		// Se llama a la sub-rutina del muestreo de decenas de horas
+	RJMP	MAIN			// Regresa a Main
 
 REALIZA_SUMA_MIN:
-	CALL	SUMA_UMIN
-	CLR		PBACTION
-	RJMP	MAIN
+	CALL	SUMA_UMIN		// Se llama a la subrutina de suma de minutos con botón
+	CLR		PBACTION		// Se limpia la bandera de acción de botón
+	RJMP	MAIN			// Regresa a Main
 
 REALIZA_RESTA_MIN:
-	CALL	RES_UMIN
-	CLR		PBACTION
-	RJMP	MAIN
+	CALL	RES_UMIN		// Se llama a la subrutina de resta de minutos con botón
+	CLR		PBACTION		// Se limpia la bandera de acción de botón
+	RJMP	MAIN			// Regresa a Main
 
-// Modo de configuración de hora
+	//*******************(Sub-rutina de Configuración de Hora)*******************//
 MODE_CONFIG_HRS:
 	CPI		PBACTION, 0x02
-	BREQ	REALIZA_SUMA_HRS
+	BREQ	REALIZA_SUMA_HRS	// Se verifica si la bandera de suma del botón está encendida
 	CPI		PBACTION, 0x03
-	BREQ	REALIZA_RESTA_HRS
+	BREQ	REALIZA_RESTA_HRS	// Se verifica si la bandera de resta del botón está encendida
 	CPI		COUNT_T0, 0x00
-	BREQ	U_MIN1
+	BREQ	U_MIN1				// Se verifica si el contador del Timer0 mostrará unidades de minutos
 	CPI		COUNT_T0, 0x01
-	BREQ	D_MIN1
+	BREQ	D_MIN1				// Se verifica si el contador del Timer0 mostrará decenas de minutos
 	CPI		COUNT_T0, 0x02
-	BREQ	U_HRS1
+	BREQ	U_HRS1				// Se verifica si el contador del Timer0 mostrará unidades de horas
 	CPI		COUNT_T0, 0x03
-	BREQ	D_HRS1
-	RJMP	MAIN
+	BREQ	D_HRS1				// Se verifica si el contador del Timer0 mostrará decenas de horas
+	RJMP	MAIN				// Regresa a Main
 
 REALIZA_SUMA_HRS:
-	CALL	SUMA_UHRS
-	CLR		PBACTION
-	RJMP	MAIN
+	CALL	SUMA_UHRS		// Se llama a la subrutina de suma de horas con botón
+	CLR		PBACTION		// Se limpia la bandera de acción de botón
+	RJMP	MAIN			// Regresa a Main
 
 REALIZA_RESTA_HRS:
-	CALL	RES_UHRS
-	CLR		PBACTION
-	RJMP	MAIN
+	CALL	RES_UHRS		// Se llama a la subrutina de resta de horas con botón
+	CLR		PBACTION		// Se limpia la bandera de acción de botón
+	RJMP	MAIN			// Regresa a Main
 
-// Modo de configuración de día
+	//*******************(Sub-rutina de Configuración de Día)*******************//
 MODE_CONFIG_DAY:
 	CPI		PBACTION, 0x02
-	BREQ	REALIZA_SUMA_DAY
+	BREQ	REALIZA_SUMA_DAY	// Se verifica si la bandera de suma del botón está encendida
 	CPI		PBACTION, 0x03
-	BREQ	REALIZA_RESTA_DAY
+	BREQ	REALIZA_RESTA_DAY	// Se verifica si la bandera de resta del botón está encendida
 	CPI		COUNT_T0, 0x00
-	BREQ	U_DAY1
+	BREQ	U_DAY1				// Se verifica si el contador del Timer0 mostrará unidades de día
 	CPI		COUNT_T0, 0x01
-	BREQ	D_DAY1
+	BREQ	D_DAY1				// Se verifica si el contador del Timer0 mostrará decenas de día
 	CPI		COUNT_T0, 0x02
-	BREQ	U_MO1
+	BREQ	U_MO1				// Se verifica si el contador del Timer0 mostrará unidades de mes
 	CPI		COUNT_T0, 0x03
-	BREQ	D_MO1
-	RJMP	MAIN
+	BREQ	D_MO1				// Se verifica si el contador del Timer0 mostrará decenas de mes
+	RJMP	MAIN				// Regresa a Main
 
 U_DAY1:
-	LDI		COUNT_T0, 0x01
-	CALL	TR1_DATE
-	RJMP	MAIN
+	LDI		COUNT_T0, 0x01	// Se carga un nuevo valor al contador de Timer0 para que muestre el siguiente dígito
+	CALL	TR1_DATE		// Se llama a la sub-rutina del muestreo de unidades de día
+	RJMP	MAIN			// Regresa a Main
 	
 D_DAY1:
-	LDI		COUNT_T0, 0x02
-	CALL	TR2_DATE
-	RJMP	MAIN
+	LDI		COUNT_T0, 0x02	// Se carga un nuevo valor al contador de Timer0 para que muestre el siguiente dígito
+	CALL	TR2_DATE		// Se llama a la sub-rutina del muestreo de decenas de día
+	RJMP	MAIN			// Regresa a Main
 
 U_MO1:
-	LDI		COUNT_T0, 0x03
-	CALL	TR3_DATE
-	RJMP	MAIN
+	LDI		COUNT_T0, 0x03	// Se carga un nuevo valor al contador de Timer0 para que muestre el siguiente dígito
+	CALL	TR3_DATE		// Se llama a la sub-rutina del muestreo de unidades de mes
+	RJMP	MAIN			// Regresa a Main
 
 D_MO1:
-	LDI		COUNT_T0, 0x00
-	CALL	TR4_DATE
-	RJMP	MAIN
+	LDI		COUNT_T0, 0x00	// Se carga un nuevo valor al contador de Timer0 para que muestre el siguiente dígito
+	CALL	TR4_DATE		// Se llama a la sub-rutina del muestreo de decenas de mes
+	RJMP	MAIN			// Regresa a Main
 
 REALIZA_SUMA_DAY:
-	CALL	SUMA_UDAY
-	CLR		PBACTION
-	RJMP	MAIN
+	CALL	SUMA_UDAY		// Se llama a la subrutina de suma de día con botón
+	CLR		PBACTION		// Se limpia la bandera de acción de botón
+	RJMP	MAIN			// Regresa a Main
 
 REALIZA_RESTA_DAY:
-	CALL	RES_UDAY
-	CLR		PBACTION
-	RJMP	MAIN
+	CALL	RES_UDAY		// Se llama a la subrutina de resta de día con botón
+	CLR		PBACTION		// Se limpia la bandera de acción de botón
+	RJMP	MAIN			// Regresa a Main
 
-// Modo de configuración de mes
+	//*******************(Sub-rutina de Configuración de Mes)*******************//
 MODE_CONFIG_MONTH:
 	CPI		PBACTION, 0x02
-	BREQ	REALIZA_SUMA_MO
+	BREQ	REALIZA_SUMA_MO	// Se verifica si la bandera de suma del botón está encendida
 	CPI		PBACTION, 0x03
-	BREQ	REALIZA_RESTA_MO
+	BREQ	REALIZA_RESTA_MO// Se verifica si la bandera de resta del botón está encendida
 	CPI		COUNT_T0, 0x00
-	BREQ	U_DAY1
+	BREQ	U_DAY1			// Se verifica si el contador del Timer0 mostrará unidades de día
 	CPI		COUNT_T0, 0x01
-	BREQ	D_DAY1
+	BREQ	D_DAY1			// Se verifica si el contador del Timer0 mostrará decenas de día
 	CPI		COUNT_T0, 0x02
-	BREQ	U_MO1
+	BREQ	U_MO1			// Se verifica si el contador del Timer0 mostrará unidades de mes
 	CPI		COUNT_T0, 0x03
-	BREQ	D_MO1
-	RJMP	MAIN
+	BREQ	D_MO1			// Se verifica si el contador del Timer0 mostrará decenas de mes
+	RJMP	MAIN			// Regresa a Main
 
 REALIZA_SUMA_MO:
-	CALL	SUMA_UMO
-	CLR		PBACTION
-	RJMP	MAIN
+	CALL	SUMA_UMO	// Se llama a la subrutina de suma de mes con botón
+	CLR		PBACTION	// Se limpia la bandera de acción de botón
+	RJMP	MAIN		// Regresa a Main
 
 REALIZA_RESTA_MO:
-	CALL	RES_UMO
-	CLR		PBACTION
-	RJMP	MAIN
+	CALL	RES_UMO		// Se llama a la subrutina de resta de mes con botón
+	CLR		PBACTION	// Se limpia la bandera de acción de botón
+	RJMP	MAIN		// Regresa a Main
 
 
-// Modo de configuración de minutos de alarma
+	//*******************(Sub-rutina de Configuración de Minutos de Alarma)*******************//
 MODE_CONFAL_MIN:
 	CPI		PBACTION, 0x02
-	BREQ	REALIZA_SUMA_ALUMIN
+	BREQ	REALIZA_SUMA_ALUMIN		// Se verifica si la bandera de suma del botón está encendida
 	CPI		PBACTION, 0x03
-	BREQ	REALIZA_RESTA_ALUMIN
+	BREQ	REALIZA_RESTA_ALUMIN	// Se verifica si la bandera de resta del botón está encendida
 	CPI		COUNT_T0, 0x00
-	BREQ	ALU_MIN
+	BREQ	ALU_MIN					// Se verifica si el contador del Timer0 mostrará unidades de minutos de alarma
 	CPI		COUNT_T0, 0x01
-	BREQ	ALD_MIN
+	BREQ	ALD_MIN					// Se verifica si el contador del Timer0 mostrará decenas de minutos de alarma
 	CPI		COUNT_T0, 0x02
-	BREQ	ALU_HRS
+	BREQ	ALU_HRS					// Se verifica si el contador del Timer0 mostrará unidades de horas de alarma
 	CPI		COUNT_T0, 0x03
-	BREQ	ALD_HRS
-	RJMP	MAIN
+	BREQ	ALD_HRS					// Se verifica si el contador del Timer0 mostrará decenas de horas de alarma
+	RJMP	MAIN					// Regresa a Main
 
 ALU_MIN:
-	LDI		COUNT_T0, 0x01
-	CALL	TR1_ALARM
-	RJMP	MAIN
+	LDI		COUNT_T0, 0x01	// Se carga un nuevo valor al contador de Timer0 para que muestre el siguiente dígito
+	CALL	TR1_ALARM		// Se llama a la sub-rutina del muestreo de unidades de minutos de alarma
+	RJMP	MAIN			// Regresa a Main
 	
 ALD_MIN:
-	LDI		COUNT_T0, 0x02
-	CALL	TR2_ALARM
-	RJMP	MAIN
+	LDI		COUNT_T0, 0x02	// Se carga un nuevo valor al contador de Timer0 para que muestre el siguiente dígito
+	CALL	TR2_ALARM		// Se llama a la sub-rutina del muestreo de decenas de minutos de alarma
+	RJMP	MAIN			// Regresa a Main
 
 ALU_HRS:
-	LDI		COUNT_T0, 0x03
-	CALL	TR3_ALARM
-	RJMP	MAIN
+	LDI		COUNT_T0, 0x03	// Se carga un nuevo valor al contador de Timer0 para que muestre el siguiente dígito
+	CALL	TR3_ALARM		// Se llama a la sub-rutina del muestreo de unidades de horas de alarma
+	RJMP	MAIN			// Regresa a Main
 
 ALD_HRS:
-	LDI		COUNT_T0, 0x00
-	CALL	TR4_ALARM
-	RJMP	MAIN
+	LDI		COUNT_T0, 0x00	// Se carga un nuevo valor al contador de Timer0 para que muestre el siguiente dígito
+	CALL	TR4_ALARM		// Se llama a la sub-rutina del muestreo de decenas de horas de alarma
+	RJMP	MAIN			// Regresa a Main
 
 REALIZA_SUMA_ALUMIN:
-	CALL	SUMA_ALUMIN
-	CLR		PBACTION
-	RJMP	MAIN
+	CALL	SUMA_ALUMIN		// Se llama a la subrutina de suma de minutos de alarma con botón
+	CLR		PBACTION		// Se limpia la bandera de acción de botón
+	RJMP	MAIN			// Regresa a Main
 
 REALIZA_RESTA_ALUMIN:
-	CALL	RES_ALUMIN
-	CLR		PBACTION
-	RJMP	MAIN
+	CALL	RES_ALUMIN		// Se llama a la subrutina de resta de minutos de alarma con botón
+	CLR		PBACTION		// Se limpia la bandera de acción de botón
+	RJMP	MAIN			// Regresa a Main
 
-// Modo de configuración de horas de alarma
+	//*******************(Sub-rutina de Configuración de Horas de Alarma)*******************//
 MODE_CONFAL_HRS:
 	CPI		PBACTION, 0x02
-	BREQ	REALIZA_SUMA_ALUHRS
+	BREQ	REALIZA_SUMA_ALUHRS		// Se verifica si la bandera de suma del botón está encendida
 	CPI		PBACTION, 0x03
-	BREQ	REALIZA_RESTA_ALUHRS
+	BREQ	REALIZA_RESTA_ALUHRS	// Se verifica si la bandera de resta del botón está encendida
 	CPI		COUNT_T0, 0x00
-	BREQ	ALU_MIN
+	BREQ	ALU_MIN					// Se verifica si el contador del Timer0 mostrará unidades de minutos
 	CPI		COUNT_T0, 0x01
-	BREQ	ALD_MIN
+	BREQ	ALD_MIN					// Se verifica si el contador del Timer0 mostrará decenas de minutos
 	CPI		COUNT_T0, 0x02
-	BREQ	ALU_HRS
+	BREQ	ALU_HRS					// Se verifica si el contador del Timer0 mostrará unidades de horas
 	CPI		COUNT_T0, 0x03
-	BREQ	ALD_HRS
-	RJMP	MAIN
+	BREQ	ALD_HRS					// Se verifica si el contador del Timer0 mostrará decenas de horas
+	RJMP	MAIN					// Regresa a Main
 
 REALIZA_SUMA_ALUHRS:
-	CALL	SUMA_ALUHRS
-	CLR		PBACTION
-	RJMP	MAIN
+	CALL	SUMA_ALUHRS		// Se llama a la subrutina de suma de horas de alarma con botón
+	CLR		PBACTION		// Se limpia la bandera de acción de botón
+	RJMP	MAIN			// Regresa a Main
 
 REALIZA_RESTA_ALUHRS:
-	CALL	RES_ALUHRS
-	CLR		PBACTION
-	RJMP	MAIN
+	CALL	RES_ALUHRS		// Se llama a la subrutina de resta de horas de alarma con botón
+	CLR		PBACTION		// Se limpia la bandera de acción de botón
+	RJMP	MAIN			// Regresa a Main
 
-// Modo de apagado de alarma
+	//*******************(Sub-rutina de Apagar Alarma)*******************//
 MODE_ALARM_OFF:
-	CALL	APAGAR_ALARMA
-	CPI		COUNT_T0, 0x00
-	BREQ	ALU_MIN
+	CALL	APAGAR_ALARMA		// Se llama a la subrutina para Apagar Alarma
+	CPI		COUNT_T0, 0x00		
+	BREQ	ALU_MIN				// Se verifica si el contador del Timer0 mostrará unidades de minutos de alarma
 	CPI		COUNT_T0, 0x01
-	BREQ	ALD_MIN
+	BREQ	ALD_MIN				// Se verifica si el contador del Timer0 mostrará decenas de minutos de alarma
 	CPI		COUNT_T0, 0x02
-	BREQ	ALU_HRS
+	BREQ	ALU_HRS				// Se verifica si el contador del Timer0 mostrará unidades de horas de alarma
 	CPI		COUNT_T0, 0x03
-	BREQ	ALD_HRS
-	RJMP	MAIN
+	BREQ	ALD_HRS				// Se verifica si el contador del Timer0 mostrará decenas de horas de alarma
+	RJMP	MAIN				// Regresa a Main
 
 /*---------------------------------------------------------------------------------------------------*/
-// Sub-rutina (no de interrupcion)
+//*******************(Sub-rutinas [no de interrupción])*******************//
+
+	//*******************(Sub-rutina para iniciar Timer0)*******************//
 INIT_TMR0:
 	LDI		R16, (1 << CS02) | (1 << CS00)
 	OUT		TCCR0B, R16	// Setear prescaler del TIMER0 a 1024
@@ -537,6 +539,7 @@ INIT_TMR0:
 	OUT		TCNT0, R16	// Cargar valor inicial en TCNT0
 	RET
 
+	//*******************(Sub-rutina para iniciar Timer1)*******************//
 INIT_TMR1:
 	LDI		R16, (1 << CS12) | (1 << CS10)
 	STS		TCCR1B, R16	// Setear prescaler del TIMER1 a 1024
@@ -546,6 +549,7 @@ INIT_TMR1:
 	STS		TCNT1L, R16 // Cargar valor inicial en TCNT1L
 	RET
 
+	//*******************(Sub-rutina para iniciar Timer2)*******************//
 INIT_TMR2:
 	LDI		R16, (1 << CS22)
 	STS		TCCR2B, R16	// Setear prescaler del TIMER2 a 64
@@ -553,6 +557,7 @@ INIT_TMR2:
 	STS		TCNT2, R16	// Cargar valor inicial en TCNT2
 	RET
 
+	//*******************(Sub-rutina para iniciar los displays)*******************//
 INICIAR_DISP:	// Se modifica la dirección a la que apunta Z a la primera de la lista
 	LDI		ZL, LOW(Disp_Hex << 1)	
 	LDI		ZH, HIGH(Disp_Hex << 1)	// Se apunta a la primera dirección de Z
@@ -560,339 +565,345 @@ INICIAR_DISP:	// Se modifica la dirección a la que apunta Z a la primera de la l
 	OUT		PORTD, R16	// Se saca a PORTD el primer valor al que apunta Z
 	RET
 
+	//*******************(Sub-rutina de Comparación de Alarma)*******************//
 COMPARE_ALARM:
 	LDS		R16, UMIN
-	LDS		R15, ALUMIN
-	CP		R16, R15
-	BREQ	CP_DMIN
-	RET
+	LDS		R15, ALUMIN		// Se cargan los valores de unidades de minutos del Reloj y la Alarma
+	CP		R16, R15		// Se comparan los valores de Reloj y Alarma
+	BREQ	CP_DMIN			// Si son iguales salta a comparar decenas de ambos
+	RET						// Regresa a donde se llamó la sub-rutina
 CP_DMIN:
 	LDS		R16, DMIN
-	LDS		R15, ALDMIN
-	CP		R16, R15
-	BREQ	CP_UHRS
-	RET
+	LDS		R15, ALDMIN		// Se cargan los valores de decenas de minutos del Reloj y la Alarma
+	CP		R16, R15		// Se comparan los valores de Reloj y Alarma
+	BREQ	CP_UHRS			// Si son iguales salta a comparar decenas de ambos
+	RET						// Regresa a donde se llamó la sub-rutina
 CP_UHRS:
 	LDS		R16, UHRS
-	LDS		R15, ALUHRS
-	CP		R16, R15
-	BREQ	CP_DHRS
-	RET
+	LDS		R15, ALUHRS		// Se cargan los valores de unidades de horas del Reloj y la Alarma
+	CP		R16, R15		// Se comparan los valores de Reloj y Alarma
+	BREQ	CP_DHRS			// Si son iguales salta a comparar decenas de ambos
+	RET						// Regresa a donde se llamó la sub-rutina
 CP_DHRS:
 	LDS		R16, DHRS
-	LDS		R15, ALDHRS
-	CP		R16, R15
-	BREQ	ALARM_ON
-	RET
+	LDS		R15, ALDHRS		// Se cargan los valores de decenas de horas del Reloj y la Alarma
+	CP		R16, R15		// Se comparan los valores de Reloj y Alarma
+	BREQ	ALARM_ON		// Si son iguales salta a comparar decenas de ambos
+	RET						// Regresa a donde se llamó la sub-rutina
 ALARM_ON:
-	SBI		PINB, PB5
-	RET
-
+	SBI		PINB, PB5		// Se enciende la Alarma si todos los valores fueron iguales
+	RET						// Regresa a donde se llamó la sub-rutina
+	
+	//*******************(Sub-rutina para Apagar la Alarma)*******************//
 APAGAR_ALARMA:
-	SBIC	PINB, PB5
-	SBI		PINB, PB5
-	RET
+	SBIC	PINB, PB5		// Se compara si la alarma está encendida
+	SBI		PINB, PB5		// Si la alarma está encendida, se apaga
+	RET						// Regresa a donde se llamó la sub-rutina
 
+	//*******************(Sub-rutinas para Multiplexación de Displays [Hora])*******************//
 TR1_TIME:
 	CBI		PORTC, PC0
 	CBI		PORTC, PC1
 	CBI		PORTC, PC2
-	CBI		PORTC, PC3
-	LDS		R16, UMIN
+	CBI		PORTC, PC3				// Se apagan todos los transistores
+	LDS		R16, UMIN				// Se garga el valor que se desea mostrar
 	LDI		ZL, LOW(Disp_Hex << 1)	
 	LDI		ZH, HIGH(Disp_Hex << 1)	// Se apunta a la primera dirección de Z
-	ADD		ZL, R16		// Se carga a Z Low el valor de R20 por medio de Suma ZL=0
-	LPM		R16, Z		// Se carga el valor guardado en la dirección de Z
-	OUT		PORTD, R16	// Se saca a PORTD el valor de que estaba guardado en la dirección de Z
-	SBI		PORTC, PC3  // Se habilitan los transistores para sacar solamente el valor a un disp
+	ADD		ZL, R16					// Se carga a Z Low el valor de R20 por medio de Suma ZL=0
+	LPM		R16, Z					// Se carga el valor guardado en la dirección de Z
+	OUT		PORTD, R16				// Se saca a PORTD el valor de que estaba guardado en la dirección de Z
+	SBI		PORTC, PC3				// Se habilitan los transistores para sacar solamente el valor a un disp
 	RET
 
 TR2_TIME:
 	CBI		PORTC, PC0
 	CBI		PORTC, PC1
 	CBI		PORTC, PC2
-	CBI		PORTC, PC3
-	LDS		R16, DMIN
+	CBI		PORTC, PC3				// Se apagan todos los transistores
+	LDS		R16, DMIN				// Se garga el valor que se desea mostrar
 	LDI		ZL, LOW(Disp_Hex << 1)	
 	LDI		ZH, HIGH(Disp_Hex << 1)	// Se apunta a la primera dirección de Z
-	ADD		ZL, R16		// Se carga a Z Low el valor de R22 por medio de Suma ZL=0
-	LPM		R16, Z		// Se carga el valor guardado en la dirección de Z
-	OUT		PORTD, R16	// Se saca a PORTD el valor de que estaba guardado en la dirección de Z
-	SBI		PORTC, PC2	// Se habilitan los transistores para sacar solamente el valor a un disp
+	ADD		ZL, R16					// Se carga a Z Low el valor de R22 por medio de Suma ZL=0
+	LPM		R16, Z					// Se carga el valor guardado en la dirección de Z
+	OUT		PORTD, R16				// Se saca a PORTD el valor de que estaba guardado en la dirección de Z
+	SBI		PORTC, PC2				// Se habilitan los transistores para sacar solamente el valor a un disp
 	RET
 
 TR3_TIME:
 	CBI		PORTC, PC0
 	CBI		PORTC, PC1
 	CBI		PORTC, PC2
-	CBI		PORTC, PC3
-	LDS		R16, UHRS
+	CBI		PORTC, PC3				// Se apagan todos los transistores
+	LDS		R16, UHRS				// Se garga el valor que se desea mostrar
 	LDI		ZL, LOW(Disp_Hex << 1)	
 	LDI		ZH, HIGH(Disp_Hex << 1)	// Se apunta a la primera dirección de Z
-	ADD		ZL, R16		// Se carga a Z Low el valor de R22 por medio de Suma ZL=0
-	LPM		R16, Z		// Se carga el valor guardado en la dirección de Z
-	OUT		PORTD, R16	// Se saca a PORTD el valor de que estaba guardado en la dirección de Z
-	SBI		PORTC, PC1	// Se habilitan los transistores para sacar solamente el valor a un disp
+	ADD		ZL, R16					// Se carga a Z Low el valor de R22 por medio de Suma ZL=0
+	LPM		R16, Z					// Se carga el valor guardado en la dirección de Z
+	OUT		PORTD, R16				// Se saca a PORTD el valor de que estaba guardado en la dirección de Z
+	SBI		PORTC, PC1				// Se habilitan los transistores para sacar solamente el valor a un disp
 	RET
 
 TR4_TIME:
 	CBI		PORTC, PC0
 	CBI		PORTC, PC1
 	CBI		PORTC, PC2
-	CBI		PORTC, PC3
-	LDS		R16, DHRS
+	CBI		PORTC, PC3				// Se apagan todos los transistores
+	LDS		R16, DHRS				// Se garga el valor que se desea mostrar
 	LDI		ZL, LOW(Disp_Hex << 1)	
 	LDI		ZH, HIGH(Disp_Hex << 1)	// Se apunta a la primera dirección de Z
-	ADD		ZL, R16		// Se carga a Z Low el valor de R22 por medio de Suma ZL=0
-	LPM		R16, Z		// Se carga el valor guardado en la dirección de Z
-	OUT		PORTD, R16	// Se saca a PORTD el valor de que estaba guardado en la dirección de Z
-	SBI		PORTC, PC0	// Se habilitan los transistores para sacar solamente el valor a un disp
+	ADD		ZL, R16					// Se carga a Z Low el valor de R22 por medio de Suma ZL=0
+	LPM		R16, Z					// Se carga el valor guardado en la dirección de Z
+	OUT		PORTD, R16				// Se saca a PORTD el valor de que estaba guardado en la dirección de Z
+	SBI		PORTC, PC0				// Se habilitan los transistores para sacar solamente el valor a un disp
 	RET
 
+	//*******************(Sub-rutinas para Multiplexación de Displays [Fecha])*******************//
 TR1_DATE:
 	CBI		PORTC, PC0
 	CBI		PORTC, PC1
 	CBI		PORTC, PC2
-	CBI		PORTC, PC3
-	LDS		R16, UDAY
+	CBI		PORTC, PC3				// Se apagan todos los transistores
+	LDS		R16, UDAY				// Se garga el valor que se desea mostrar
 	LDI		ZL, LOW(Disp_Hex << 1)	
 	LDI		ZH, HIGH(Disp_Hex << 1)	// Se apunta a la primera dirección de Z
-	ADD		ZL, R16		// Se carga a Z Low el valor de R20 por medio de Suma ZL=0
-	LPM		R16, Z		// Se carga el valor guardado en la dirección de Z
-	OUT		PORTD, R16	// Se saca a PORTD el valor de que estaba guardado en la dirección de Z
-	SBI		PORTC, PC3  // Se habilitan los transistores para sacar solamente el valor a un disp
+	ADD		ZL, R16					// Se carga a Z Low el valor de R22 por medio de Suma ZL=0
+	LPM		R16, Z					// Se carga el valor guardado en la dirección de Z
+	OUT		PORTD, R16				// Se saca a PORTD el valor de que estaba guardado en la dirección de Z
+	SBI		PORTC, PC3  			// Se habilitan los transistores para sacar solamente el valor a un disp
 	RET
 
 TR2_DATE:
 	CBI		PORTC, PC0
 	CBI		PORTC, PC1
 	CBI		PORTC, PC2
-	CBI		PORTC, PC3
-	LDS		R16, DDAY
+	CBI		PORTC, PC3				// Se apagan todos los transistores
+	LDS		R16, DDAY				// Se garga el valor que se desea mostrar
 	LDI		ZL, LOW(Disp_Hex << 1)	
 	LDI		ZH, HIGH(Disp_Hex << 1)	// Se apunta a la primera dirección de Z
-	ADD		ZL, R16		// Se carga a Z Low el valor de R22 por medio de Suma ZL=0
-	LPM		R16, Z		// Se carga el valor guardado en la dirección de Z
-	OUT		PORTD, R16	// Se saca a PORTD el valor de que estaba guardado en la dirección de Z
-	SBI		PORTC, PC2	// Se habilitan los transistores para sacar solamente el valor a un disp
+	ADD		ZL, R16					// Se carga a Z Low el valor de R22 por medio de Suma ZL=0
+	LPM		R16, Z					// Se carga el valor guardado en la dirección de Z
+	OUT		PORTD, R16				// Se saca a PORTD el valor de que estaba guardado en la dirección de Z
+	SBI		PORTC, PC2				// Se habilitan los transistores para sacar solamente el valor a un disp
 	RET
 
 TR3_DATE:
 	CBI		PORTC, PC0
 	CBI		PORTC, PC1
 	CBI		PORTC, PC2
-	CBI		PORTC, PC3
-	LDS		R16, UMO
+	CBI		PORTC, PC3				// Se apagan todos los transistores
+	LDS		R16, UMO				// Se garga el valor que se desea mostrar
 	LDI		ZL, LOW(Disp_Hex << 1)	
 	LDI		ZH, HIGH(Disp_Hex << 1)	// Se apunta a la primera dirección de Z
-	ADD		ZL, R16		// Se carga a Z Low el valor de R22 por medio de Suma ZL=0
-	LPM		R16, Z		// Se carga el valor guardado en la dirección de Z
-	OUT		PORTD, R16	// Se saca a PORTD el valor de que estaba guardado en la dirección de Z
-	SBI		PORTC, PC1	// Se habilitan los transistores para sacar solamente el valor a un disp
+	ADD		ZL, R16					// Se carga a Z Low el valor de R22 por medio de Suma ZL=0
+	LPM		R16, Z					// Se carga el valor guardado en la dirección de Z
+	OUT		PORTD, R16				// Se saca a PORTD el valor de que estaba guardado en la dirección de Z
+	SBI		PORTC, PC1				// Se habilitan los transistores para sacar solamente el valor a un disp
 	RET
 
 TR4_DATE:
 	CBI		PORTC, PC0
 	CBI		PORTC, PC1
 	CBI		PORTC, PC2
-	CBI		PORTC, PC3
-	LDS		R16, DMO
+	CBI		PORTC, PC3				// Se apagan todos los transistores
+	LDS		R16, DMO				// Se garga el valor que se desea mostrar
 	LDI		ZL, LOW(Disp_Hex << 1)	
 	LDI		ZH, HIGH(Disp_Hex << 1)	// Se apunta a la primera dirección de Z
-	ADD		ZL, R16		// Se carga a Z Low el valor de R22 por medio de Suma ZL=0
-	LPM		R16, Z		// Se carga el valor guardado en la dirección de Z
-	OUT		PORTD, R16	// Se saca a PORTD el valor de que estaba guardado en la dirección de Z
-	SBI		PORTC, PC0	// Se habilitan los transistores para sacar solamente el valor a un disp
+	ADD		ZL, R16					// Se carga a Z Low el valor de R22 por medio de Suma ZL=0
+	LPM		R16, Z					// Se carga el valor guardado en la dirección de Z
+	OUT		PORTD, R16				// Se saca a PORTD el valor de que estaba guardado en la dirección de Z
+	SBI		PORTC, PC0				// Se habilitan los transistores para sacar solamente el valor a un disp
 	RET
 
+	//*******************(Sub-rutinas para Multiplexación de Displays [Alarma])*******************//
 TR1_ALARM:
 	CBI		PORTC, PC0
 	CBI		PORTC, PC1
 	CBI		PORTC, PC2
-	CBI		PORTC, PC3
-	LDS		R16, ALUMIN
+	CBI		PORTC, PC3				// Se apagan todos los transistores
+	LDS		R16, ALUMIN				// Se garga el valor que se desea mostrar
 	LDI		ZL, LOW(Disp_Hex << 1)	
 	LDI		ZH, HIGH(Disp_Hex << 1)	// Se apunta a la primera dirección de Z
-	ADD		ZL, R16		// Se carga a Z Low el valor de R20 por medio de Suma ZL=0
-	LPM		R16, Z		// Se carga el valor guardado en la dirección de Z
-	OUT		PORTD, R16	// Se saca a PORTD el valor de que estaba guardado en la dirección de Z
-	SBI		PORTC, PC3  // Se habilitan los transistores para sacar solamente el valor a un disp
+	ADD		ZL, R16					// Se carga a Z Low el valor de R22 por medio de Suma ZL=0
+	LPM		R16, Z					// Se carga el valor guardado en la dirección de Z
+	OUT		PORTD, R16				// Se saca a PORTD el valor de que estaba guardado en la dirección de Z
+	SBI		PORTC, PC3  			// Se habilitan los transistores para sacar solamente el valor a un disp
 	RET
 
 TR2_ALARM:
 	CBI		PORTC, PC0
 	CBI		PORTC, PC1
 	CBI		PORTC, PC2
-	CBI		PORTC, PC3
-	LDS		R16, ALDMIN
+	CBI		PORTC, PC3				// Se apagan todos los transistores
+	LDS		R16, ALDMIN				// Se garga el valor que se desea mostrar
 	LDI		ZL, LOW(Disp_Hex << 1)	
 	LDI		ZH, HIGH(Disp_Hex << 1)	// Se apunta a la primera dirección de Z
-	ADD		ZL, R16		// Se carga a Z Low el valor de R22 por medio de Suma ZL=0
-	LPM		R16, Z		// Se carga el valor guardado en la dirección de Z
-	OUT		PORTD, R16	// Se saca a PORTD el valor de que estaba guardado en la dirección de Z
-	SBI		PORTC, PC2	// Se habilitan los transistores para sacar solamente el valor a un disp
+	ADD		ZL, R16					// Se carga a Z Low el valor de R22 por medio de Suma ZL=0
+	LPM		R16, Z					// Se carga el valor guardado en la dirección de Z
+	OUT		PORTD, R16				// Se saca a PORTD el valor de que estaba guardado en la dirección de Z
+	SBI		PORTC, PC2				// Se habilitan los transistores para sacar solamente el valor a un disp
 	RET
 
 TR3_ALARM:
 	CBI		PORTC, PC0
 	CBI		PORTC, PC1
 	CBI		PORTC, PC2
-	CBI		PORTC, PC3
-	LDS		R16, ALUHRS
+	CBI		PORTC, PC3				// Se apagan todos los transistores
+	LDS		R16, ALUHRS				// Se garga el valor que se desea mostrar
 	LDI		ZL, LOW(Disp_Hex << 1)	
 	LDI		ZH, HIGH(Disp_Hex << 1)	// Se apunta a la primera dirección de Z
-	ADD		ZL, R16		// Se carga a Z Low el valor de R22 por medio de Suma ZL=0
-	LPM		R16, Z		// Se carga el valor guardado en la dirección de Z
-	OUT		PORTD, R16	// Se saca a PORTD el valor de que estaba guardado en la dirección de Z
-	SBI		PORTC, PC1	// Se habilitan los transistores para sacar solamente el valor a un disp
+	ADD		ZL, R16					// Se carga a Z Low el valor de R22 por medio de Suma ZL=0
+	LPM		R16, Z					// Se carga el valor guardado en la dirección de Z
+	OUT		PORTD, R16				// Se saca a PORTD el valor de que estaba guardado en la dirección de Z
+	SBI		PORTC, PC1				// Se habilitan los transistores para sacar solamente el valor a un disp
 	RET
 
 TR4_ALARM:
 	CBI		PORTC, PC0
 	CBI		PORTC, PC1
 	CBI		PORTC, PC2
-	CBI		PORTC, PC3
-	LDS		R16, ALDHRS
+	CBI		PORTC, PC3				// Se apagan todos los transistores
+	LDS		R16, ALDHRS				// Se garga el valor que se desea mostrar
 	LDI		ZL, LOW(Disp_Hex << 1)	
 	LDI		ZH, HIGH(Disp_Hex << 1)	// Se apunta a la primera dirección de Z
-	ADD		ZL, R16		// Se carga a Z Low el valor de R22 por medio de Suma ZL=0
-	LPM		R16, Z		// Se carga el valor guardado en la dirección de Z
-	OUT		PORTD, R16	// Se saca a PORTD el valor de que estaba guardado en la dirección de Z
-	SBI		PORTC, PC0	// Se habilitan los transistores para sacar solamente el valor a un disp
+	ADD		ZL, R16					// Se carga a Z Low el valor de R22 por medio de Suma ZL=0
+	LPM		R16, Z					// Se carga el valor guardado en la dirección de Z
+	OUT		PORTD, R16				// Se saca a PORTD el valor de que estaba guardado en la dirección de Z
+	SBI		PORTC, PC0				// Se habilitan los transistores para sacar solamente el valor a un disp
 	RET
 
+	//*******************(Sub-rutina para Cambio de Modo)*******************//
 MODE_CHANGE:
-	INC		MODE
+	INC		MODE			// Se incrementa el modo
 	CPI		MODE, 0x01
-	BREQ	MODO_2
+	BREQ	MODO_2			// Se verifica si está en el segundo modo
 	CPI		MODE, 0x02
-	BREQ	MODO_3
+	BREQ	MODO_3			// Se verifica si está en el tercer modo
 	CPI		MODE, 0x03
-	BREQ	MODO_4
+	BREQ	MODO_4			// Se verifica si está en el cuarto modo
 	CPI		MODE, 0x04
-	BREQ	MODO_5
+	BREQ	MODO_5			// Se verifica si está en el quinto modo
 	CPI		MODE, 0x05
-	BREQ	MODO_6
+	BREQ	MODO_6			// Se verifica si está en el sexto modo
 	CPI		MODE, 0x06
-	BREQ	MODO_7
+	BREQ	MODO_7			// Se verifica si está en el séptimo modo
 	CPI		MODE, 0x07
-	BREQ	MODO_8
-	CPI		MODE, 0x09	// Le sumamos 1 a R20 y comparamos si hay overflow
+	BREQ	MODO_8			// Se verifica si está en el octavo modo
+	CPI		MODE, 0x09		// Se compara si hay overflow
 	BREQ	OVERFLOW_MODE	// Si hay overflow, reinicia el sumador
 	RET
 OVERFLOW_MODE:
-	LDI		MODE, 0x00	// Si hay overflow, hacemos reset al registro R20
-	BREQ	MODO_1
+	LDI		MODE, 0x00		// Si hay overflow, hacemos reset al registro R20
+	BREQ	MODO_1			// Salta al primer modo
 	RET
 MODO_1:
-	SBIC	PORTC, PC4
-	SBI		PINC, PC4
-	SBIC	PORTB, PB4
-	SBI		PINB, PB4
-	SBIC	PORTB, PB3
-	SBI		PINB, PB3
+	SBIC	PORTC, PC4		// Se verifica si está apagado el Led
+	SBI		PINC, PC4		// Si está encendido hace toggle
+	SBIC	PORTB, PB4		// Se verifica si está apagado el Led
+	SBI		PINB, PB4		// Si está encendido hace toggle
+	SBIC	PORTB, PB3		// Se verifica si está apagado el Led
+	SBI		PINB, PB3		// Si está encendido hace toggle
 	RET
 MODO_2:
-	SBI		PINC, PC4
+	SBI		PINC, PC4		// Se hace toggle al Led
 	RET
 MODO_3:
-	SBI		PINC, PC4
-	SBI		PINB, PB4
+	SBI		PINC, PC4		// Se hace toggle al Led
+	SBI		PINB, PB4		// Se hace toggle al Led
 	RET
 MODO_4:
-	SBI		PINC, PC4
+	SBI		PINC, PC4		// Se hace toggle al Led
 	RET
 MODO_5:
-	SBI		PINC, PC4
-	SBI		PINB, PB4
-	SBI		PINB, PB3
+	SBI		PINC, PC4		// Se hace toggle al Led
+	SBI		PINB, PB4		// Se hace toggle al Led
+	SBI		PINB, PB3		// Se hace toggle al Led
 	RET
 MODO_6:
-	SBI		PINC, PC4
+	SBI		PINC, PC4		// Se hace toggle al Led
 	RET
 MODO_7:
-	SBI		PINC, PC4
-	SBI		PINB, PB4
+	SBI		PINC, PC4		// Se hace toggle al Led
+	SBI		PINB, PB4		// Se hace toggle al Led
 	RET
 MODO_8:
-	SBI		PINC, PC4
+	SBI		PINC, PC4		// Se hace toggle al Led
 	RET
 
 SUM_TIMER1:	// Suma del tiempo en el reloj
 	LDS		R16, UMIN
 	INC		R16	
-	CPI		R16, 0x0A	// Se le suma 1 a UMIN y comparamos si hay overflow
-	BREQ	SUM_DMIN	// Si llega a 10M salta a SUM_DMIN
-	STS		UMIN, R16	// Se actualiza el valor de UMIN en la RAM
-	CALL	COMPARE_ALARM
+	CPI		R16, 0x0A		// Se le suma 1 a UMIN y comparamos si hay overflow
+	BREQ	SUM_DMIN		// Si llega a 10M salta a SUM_DMIN
+	STS		UMIN, R16		// Se actualiza el valor de UMIN en la RAM
+	CALL	COMPARE_ALARM	// Se llama a la sub-rutina de Comparación de Alarma
 	RET
 SUM_DMIN:
 	CLR		R16
-	STS		UMIN, R16	// Se reinicia UMIN y se guarda en la RAM
+	STS		UMIN, R16		// Se reinicia UMIN y se guarda en la RAM
 	LDS		R16, DMIN
 	INC		R16
-	CPI		R16, 0x06	// Se le suma 1 a DMIN y comparamos si hay overflow
-	BREQ	SUM_UHRS	// Si llega a 1H salta a SUM_UHRS
-	STS		DMIN, R16	// Se actualiza el valor de DMIN en la RAM
-	CALL	COMPARE_ALARM
+	CPI		R16, 0x06		// Se le suma 1 a DMIN y comparamos si hay overflow
+	BREQ	SUM_UHRS		// Si llega a 1H salta a SUM_UHRS
+	STS		DMIN, R16		// Se actualiza el valor de DMIN en la RAM
+	CALL	COMPARE_ALARM	// Se llama a la sub-rutina de Comparación de Alarma
 	RET
 SUM_UHRS:
 	CLR		R16
 	STS		UMIN, R16
-	STS		DMIN, R16	// Se reinician los minutos y se guarda en la RAM
+	STS		DMIN, R16		// Se reinician los minutos y se guarda en la RAM
 	LDS		R16, DHRS
-	CPI		R16, 0x02	// Se verifica si llegó a 20HRS
-	BREQ	SUM_24HRS	// Si llegó a 20HRS, salta a SUM_24HRS
+	CPI		R16, 0x02		// Se verifica si llegó a 20HRS
+	BREQ	SUM_24HRS		// Si llegó a 20HRS, salta a SUM_24HRS
 	LDS		R16, UHRS
 	INC		R16
-	CPI		R16, 0x0A	// Se le suma 1 a UHRS y comparamos si hay overflow
-	BREQ	SUM_DHRS	// Si llega a 10H salta a SUM_DHRS
-	STS		UHRS, R16	// Se actualiza el valor de UHRS en la RAM
-	CALL	COMPARE_ALARM
+	CPI		R16, 0x0A		// Se le suma 1 a UHRS y comparamos si hay overflow
+	BREQ	SUM_DHRS		// Si llega a 10H salta a SUM_DHRS
+	STS		UHRS, R16		// Se actualiza el valor de UHRS en la RAM
+	CALL	COMPARE_ALARM	// Se llama a la sub-rutina de Comparación de Alarma
 	RET
 SUM_DHRS:
 	CLR		R16
 	STS		UMIN, R16
 	STS		DMIN, R16
-	STS		UHRS, R16	// Se reinician los minutos y UHRS, y se guarda en la RAM
+	STS		UHRS, R16		// Se reinician los minutos y UHRS, y se guarda en la RAM
 	LDS		R16, DHRS
-	INC		R16
-	STS		DHRS, R16	// Se actualiza el valor de DHRS en la RAM
-	CALL	COMPARE_ALARM
+	INC		R16				// Se incrementa el valor de DHRS
+	STS		DHRS, R16		// Se actualiza el valor de DHRS en la RAM
+	CALL	COMPARE_ALARM	// Se llama a la sub-rutina de Comparación de Alarma
 	RET
 SUM_24HRS:
 	LDS		R16, UHRS
 	INC		R16			
-	CPI		R16, 0x04	// Se le suma 1 a UHRS y comparamos si hay overflow
-	BREQ	SUM_UDAY	// Si llega a 24H salta a SUM_UDAY
-	STS		UHRS, R16	// Se actualiza el valor de UHRS en la RAM
-	CALL	COMPARE_ALARM
+	CPI		R16, 0x04		// Se le suma 1 a UHRS y comparamos si hay overflow
+	BREQ	SUM_UDAY		// Si llega a 24H salta a SUM_UDAY
+	STS		UHRS, R16		// Se actualiza el valor de UHRS en la RAM
+	CALL	COMPARE_ALARM	// Se llama a la sub-rutina de Comparación de Alarma
 	RET
 SUM_UDAY:
 	CLR		R16
 	STS		UMIN, R16
 	STS		DMIN, R16
 	STS		UHRS, R16
-	STS		DHRS, R16	// Se reinician los minutos y las horas, y se guarda en la RAM
+	STS		DHRS, R16			// Se reinician los minutos y las horas, y se guarda en la RAM
 	LDS		R16, UDAY
 	LDS		R23, DDAY
 	LSL		R23
 	LSL		R23
 	LSL		R23
-	LSL		R23
-	ADD		R23, R16	// Se sacan los valores de UDAY y DDAY y se suman en un registro
+	LSL		R23			
+	ADD		R23, R16			// Se sacan los valores de UDAY y DDAY y se suman en un registro
 	LDI		ZL, LOW(Meses << 1)  
 	LDI		ZH, HIGH(Meses << 1)  
 	ADD		ZL, MES
-	LPM		R16, Z		// Se saca el valor de la cantidad de días que tiene el Mes actual
+	LPM		R16, Z				// Se saca el valor de la cantidad de días que tiene el Mes actual
 	CP		R23, R16
-	BREQ	SUM_UMO	// Se comparan los valores de días actuales con los días del mes, si son iguales salta a SUM_MDAY
+	BREQ	SUM_UMO				// Se comparan los valores de días actuales con los días del mes, si son iguales salta a SUM_MDAY
 	LDS		R16, UDAY
 	INC		R16
-	CPI		R16, 0x0A	// Se le suma 1 a UDAY y comparamos si hay overflow
-	BREQ	SUM_DDAY	// Si llega a 10D salta a SUM_DDAY
-	STS		UDAY, R16	// Se actualiza el valor de DDAY en la RAM
-	CALL	COMPARE_ALARM
+	CPI		R16, 0x0A			// Se le suma 1 a UDAY y comparamos si hay overflow
+	BREQ	SUM_DDAY			// Si llega a 10D salta a SUM_DDAY
+	STS		UDAY, R16			// Se actualiza el valor de DDAY en la RAM
+	CALL	COMPARE_ALAR		// Se llama a la sub-rutina de Comparación de Alarma
 	RET
 SUM_DDAY:
 	CLR		R16
@@ -900,24 +911,24 @@ SUM_DDAY:
 	STS		DMIN, R16
 	STS		UHRS, R16
 	STS		DHRS, R16
-	STS		UDAY, R16	// Se reinician los minutos, las horas y UDAY, y se guarda en la RAM
+	STS		UDAY, R16			// Se reinician los minutos, las horas y UDAY, y se guarda en la RAM
 	LDS		R16, UDAY
 	LDS		R23, DDAY
 	LSL		R23
 	LSL		R23
 	LSL		R23
 	LSL		R23
-	ADD		R23, R16	// Se sacan los valores de UDAY y DDAY y se suman en un registro
+	ADD		R23, R16			// Se sacan los valores de UDAY y DDAY y se suman en un registro
 	LDI		ZL, LOW(Meses << 1)  
 	LDI		ZH, HIGH(Meses << 1)  
 	ADD		ZL, MES
-	LPM		R16, Z		// Se saca el valor de la cantidad de días que tiene el Mes actual
+	LPM		R16, Z				// Se saca el valor de la cantidad de días que tiene el Mes actual
 	CP		R23, R16
-	BREQ	SUM_UMO	// Se comparan los valores de días actuales con los días del mes, si son iguales salta a SUM_MDAY
+	BREQ	SUM_UMO				// Se comparan los valores de días actuales con los días del mes, si son iguales salta a SUM_MDAY
 	LDS		R16, DDAY
 	INC		R16
-	STS		DDAY, R16
-	CALL	COMPARE_ALARM
+	STS		DDAY, R16			// Se actualiza el valor de DDAY en la RAM
+	CALL	COMPARE_ALARM		// Se llama a la sub-rutina de Comparación de Alarma
 	RET
 SUM_UMO:
 	CLR		R16
