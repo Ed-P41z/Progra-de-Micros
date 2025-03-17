@@ -8,11 +8,11 @@
 
 .include "M328PDEF.inc"
 
-.equ	T0VALUE		= 0xFD
-.equ	T1HVALUE	= 0x1B//0xFF
-.equ	T1LVALUE	= 0x1E//0xFF
-.equ	T2VALUE		= 0x64
-.equ	MODES		= 8
+.equ	T0VALUE		= 0xFD	// Valor que cuenta 3ms con Timer0
+.equ	T1HVALUE	= 0x1B	// Valor en High de Timer1 que cuenta 1 minuto
+.equ	T1LVALUE	= 0x1E	// Valor en Low de Timer1 que cuenta 1 minuto
+.equ	T2VALUE		= 0x64	// Valor que cuenta 10ms con Timer2 (se usará un contador para que cuente 500ms en total)
+.equ	MODES		= 8		// Total de modos que se usarán en el proyecto
 .def	COUNT_T0	= R17	// Registro que guarda el contador de Timer0
 .def	COUNT_T2	= R22	// Regritro que guarda el contador de Timer2
 .def	LEDMODE		= R18	// Registro que guarda el estado de los LEDS de modo
@@ -22,8 +22,9 @@
 .def	MES			= R24	// Registro que guarda el mes actual
 .def	PBACTION	= R25	// Registro que guarda la acción de los botones
 
-	// Registros ocupados: R16, R17, R18, R18, R20, R21, R22, R23, R24, R25
+	// Registros ocupados: R16, R17, R18, R18, R20, R21, R22, R23, R24, R25, R26, R27
 
+//*******************(Segmento donde se guardan datos del reloj en RAM)*******************//
 .dseg
 .org	SRAM_START
 UMIN:	.byte	1	// Espacio en RAM para guardar unidades de minutos
@@ -39,55 +40,60 @@ ALDMIN:	.byte	1	// Espacio en RAM para guardar decenas de minutos de Alarma
 ALUHRS:	.byte	1	// Espacio en RAM para guardar unidades de horas de Alarma
 ALDHRS:	.byte	1	// Espacio en RAM para guardar decenas de horas de Alarma
 
-
+//**************(Segmento donde se guarda el código del funcionamiento del reloj)**************//
 .cseg
 .org	0x0000
-	JMP		SETUP
+	JMP		SETUP		// Rutina de setup que solo se ejecutará una vez
 
 .org	PCI0addr
 	JMP		PBREAD		//Sub-rutina de interrupción cuando se presionen los botones
 
 .org	OVF2addr
-	JMP		TMR2_OV		//Sub-rutina de interrupción cuando hay overflow en el timer1
+	JMP		TMR2_OV		//Sub-rutina de interrupción cuando hay overflow en el Timer2
 
 .org	OVF1addr
-	JMP		TMR1_OV		//Sub-rutina de interrupción cuando hay overflow en el timer1
+	JMP		TMR1_OV		//Sub-rutina de interrupción cuando hay overflow en el Timer1
 
 .org	OVF0addr
-	JMP		TMR0_OV		//Sub-rutina de interrupción cuando hay overflow en el timer0
+	JMP		TMR0_OV		//Sub-rutina de interrupción cuando hay overflow en el Timer0
 
 
 /*---------------------------------------------------------------------------------------------------*/
+//*******************(Rutina de Setup para realizar el reloj)*******************//
 SETUP:
 	// Se apagan las interrupciones globales
 	CLI
 
+	//*******************(Listas para displays y meses)*******************//
 	// Lista de valores para mostrar números en el display
 	Disp_Hex:	.DB 0x3F, 0x06, 0x5B, 0x4F, 0x66, 0x6D, 0x7D, 0x07, 0x7F, 0x6F
 	//				 0		1	 2	   3	 4	   5	 6	   7	 8	   9
+	
+	// Lista de valores de lso días individuales de cada mes
 	Meses:		.DB	0x31, 0x28, 0x31, 0x30, 0x31, 0x30, 0x31, 0x31, 0x30, 0x31, 0x30, 0x31
-	//			.DB 0x1F, 0x1C, 0x1F, 0x1E, 0x1F, 0x1E, 0x1F, 0x1F, 0x1E, 0x1F, 0x1E, 0x1F
 	//			  | Jan | Feb |	Mar | Apr | May | Jun |	Jul | Aug | Sep | Oct | Nov | Dec |
 
-	// Se configura la pila
+	//*******************(Configuración de pila)*******************//
 	LDI		R16, LOW(RAMEND)
 	OUT		SPL, R16
 	LDI		R16, HIGH(RAMEND)
 	OUT		SPH, R16
 	
-	// Se realiza la configuración del prescaler
+	//*******************(Configuración de Prescalers y Timers)*******************//
 	LDI		R16, (1 << CLKPCE)
 	STS		CLKPR, R16	// Se habilita el cambio del prescaler
 	LDI		R16, 0x04
 	STS		CLKPR, R16	// Se configura el prescaler a 1MHz
-	CALL	INIT_TMR0	// Se inicia el timer 0
-	CALL	INIT_TMR1	// Se inicia el timer 1
-	CALL	INIT_TMR2	// Se inicia el timer 2
+	CALL	INIT_TMR0	// Se inicia el Timer0
+	CALL	INIT_TMR1	// Se inicia el Timer1
+	CALL	INIT_TMR2	// Se inicia el Timer2
 
+	//*******************(Configuración Pines Serial)*******************//
 	// Desabilitar el serial
 	LDI R16, 0x00
 	STS UCSR0B, R16
 
+	//*******************(Habilitar interrupciones)*******************//
 	// Se habilitan las interrupciones de Timer0
 	LDI		R16, (1 << TOIE0)
 	STS		TIMSK0, R16
@@ -106,7 +112,7 @@ SETUP:
 	LDI		R16, (1 << PCINT0) | (1 << PCINT1) | (1 << PCINT2)
 	STS		PCMSK0, R16
 
-	// Se configuran pines de entrada y salida (DDRx, PORTx, PINx)
+	//*******************(Configuración de Inputs y Outputs)*******************//
 	// Se configura PORTD y PORTC como salida inicialmente apagado
 	LDI		R16, 0xFF
 	OUT		DDRD, R16	// Se configura el puerto D como salida
@@ -118,17 +124,16 @@ SETUP:
 
 	// Se configura PORTB como entrada con pull-up habilitado
 	LDI		R16, 0x00
-	OUT		DDRB, R16	// Se configura el puerto B como entrada y pb5 como salida
-	LDI		R16, (1 << PB5)
+	OUT		DDRB, R16	// Se configura el puerto B como entrada y pb3-pb5 como salida
+	LDI		R16, (1 << PB5) | (1 << PB4) | (1 << PB3)
 	OUT		DDRB, R16
 	LDI		R16, 0xFF
 	OUT		PORTB, R16	// Se configuran los pines con pull-up activado
-	LDI		R16, (0 << PB5)
-	OUT		PORTB, R16
+	LDI		R16, (0 << PB5) | (0 << PB4) | (0 << PB3)
+	OUT		PORTB, R16	// Se configuran pb3-pb5 para estar inicialmente apagados
 
-
-	// Se inicializan las variables
-	LDI		R16, 0x00	// Se carga 0 a los espacios de la RAM donde se guarda la hora y fecha
+	//*******************(Inicialización de variables)*******************//
+	LDI		R16, 0x00	// Se carga 0 a los espacios de la RAM donde se guarda la hora, fecha y alarma
 	STS		UMIN, R16 
 	STS		DMIN, R16
 	STS		UHRS, R16
@@ -139,26 +144,29 @@ SETUP:
 	STS		ALDMIN, R16
 	STS		ALUHRS, R16
 	STS		ALDHRS, R16
-	LDI		R16, 0x01	// Se carga 1 únicamente a Unidades de día para que no empiecen en 0
+	LDI		R16, 0x01	// Se carga 1 únicamente a Unidades de día y mes para que no empiecen en 0
 	STS		UDAY, R16
 	STS		UMO, R16
 	CLR		COUNT_T0	// Se coloca 0x00 a R17
 	CLR		LEDMODE		// Se coloca 0x00 a R18
 	LDI		PBSTATE, 0xFF	// Se coloca 0xFF a R19
 	CLR		TRDISP		// Se coloca 0x00 a R20
-	LDI		MODE, 0x00		// Se coloca en el primer modo del reloj
+	LDI		MODE, 0x00	// Se coloca en el primer modo del reloj
 	CLR		MES			// Se coloca el registro que guarda el mes actual en enero
-	CLR		PBACTION
-	CLR		R26
+	CLR		PBACTION	// Se coloca 0x00 a R25
+	CLR		R26			// Se coloca 0x00 a R26
 
+	//*******************(Iniciar Display)*******************//
 	CALL	INICIAR_DISP// Se inicia el display donde se mostrará el contador
 	
+
 	SEI					// Habilitamos las interrupciones globales nuevamente
 
 /*---------------------------------------------------------------------------------------------------*/
+//*******************(Rutina Main)*******************//
 MAIN:
 	CPI		PBACTION, 0x01
-	BREQ	CAMBIAR_MODO
+	BREQ	CAMBIAR_MODO	// Se compara la bandera de cambio de modo y salta a cambiar de modo si está encendida
 	CPI		MODE, 0
 	BREQ	HORA		// Modo que muestra la hora
 	CPI		MODE, 1
@@ -179,30 +187,33 @@ MAIN:
 	BREQ	ALARM_OFF	// Modo que apaga la alarma
 	RJMP	MAIN
 CAMBIAR_MODO:
-	CALL	MODE_CHANGE
-	CLR		PBACTION
-	RJMP	MAIN
+	CALL	MODE_CHANGE	// Se llama a la sub-rutina de cambio de modo
+	CLR		PBACTION	// Se limpia la bandera de cambio de modo
+	RJMP	MAIN		// Regresa a Main
 HORA:
-	RJMP	MODE_HORA
+	RJMP	MODE_HORA	// Salta a la sub-rutina del Modo de Hora 
 FECHA:
-	RJMP	MODE_FECHA
+	RJMP	MODE_FECHA	// Salta a la sub-rutina del Modo de Fecha
 CONFIG_MIN:
-	RJMP	MODE_CONFIG_MIN
+	RJMP	MODE_CONFIG_MIN	// Salta a la sub-rutina del Modo de Configuración de Minutos
 CONFIG_HRS:
-	RJMP	MODE_CONFIG_HRS
+	RJMP	MODE_CONFIG_HRS	// Salta a la sub-rutina del Modo de Configuración de Horas
 CONFIG_DAY:
-	RJMP	MODE_CONFIG_DAY
+	RJMP	MODE_CONFIG_DAY	// Salta a la sub-rutina del Modo de Configuración de Día
 CONFIG_MONTH:
-	RJMP	MODE_CONFIG_MONTH
+	RJMP	MODE_CONFIG_MONTH	// Salta a la sub-rutina del Modo de Configuración de Mes
 CONFAL_MIN:
-	RJMP	MODE_CONFAL_MIN
+	RJMP	MODE_CONFAL_MIN	// Salta a la sub-rutina del Modo de Configuración de Minutos de Alarma
 CONFAL_HRS:
-	RJMP	MODE_CONFAL_HRS
+	RJMP	MODE_CONFAL_HRS	// Salta a la sub-rutina del Modo de Configuración de Horas de Alarma
 ALARM_OFF:
-	RJMP	MODE_ALARM_OFF
-RJMP	MAIN
+	RJMP	MODE_ALARM_OFF	// Salta a la sub-rutina del Modo de Apagar Alarma
+RJMP	MAIN		// Regresa a Main
+
+
 /*---------------------------------------------------------------------------------------------------*/
-// Sub-rutina de modos
+//*******************(Sub-rutinas de Modos)*******************//
+
 // Modo de Hora
 MODE_HORA:
 	LDI		R16, (1 << TOIE1)
@@ -568,7 +579,7 @@ CP_UHRS:
 	BREQ	CP_DHRS
 	RET
 CP_DHRS:
-	LDS		R15, DHRS
+	LDS		R16, DHRS
 	LDS		R15, ALDHRS
 	CP		R16, R15
 	BREQ	ALARM_ON
@@ -752,11 +763,59 @@ TR4_ALARM:
 
 MODE_CHANGE:
 	INC		MODE
+	CPI		MODE, 0x01
+	BREQ	MODO_2
+	CPI		MODE, 0x02
+	BREQ	MODO_3
+	CPI		MODE, 0x03
+	BREQ	MODO_4
+	CPI		MODE, 0x04
+	BREQ	MODO_5
+	CPI		MODE, 0x05
+	BREQ	MODO_6
+	CPI		MODE, 0x06
+	BREQ	MODO_7
+	CPI		MODE, 0x07
+	BREQ	MODO_8
 	CPI		MODE, 0x09	// Le sumamos 1 a R20 y comparamos si hay overflow
 	BREQ	OVERFLOW_MODE	// Si hay overflow, reinicia el sumador
 	RET
 OVERFLOW_MODE:
 	LDI		MODE, 0x00	// Si hay overflow, hacemos reset al registro R20
+	BREQ	MODO_1
+	RET
+MODO_1:
+	SBIC	PORTC, PC4
+	SBI		PINC, PC4
+	SBIC	PORTB, PB4
+	SBI		PINB, PB4
+	SBIC	PORTB, PB3
+	SBI		PINB, PB3
+	RET
+MODO_2:
+	SBI		PINC, PC4
+	RET
+MODO_3:
+	SBI		PINC, PC4
+	SBI		PINB, PB4
+	RET
+MODO_4:
+	SBI		PINC, PC4
+	RET
+MODO_5:
+	SBI		PINC, PC4
+	SBI		PINB, PB4
+	SBI		PINB, PB3
+	RET
+MODO_6:
+	SBI		PINC, PC4
+	RET
+MODO_7:
+	SBI		PINC, PC4
+	SBI		PINB, PB4
+	RET
+MODO_8:
+	SBI		PINC, PC4
 	RET
 
 SUM_TIMER1:	// Suma del tiempo en el reloj
@@ -833,6 +892,7 @@ SUM_UDAY:
 	CPI		R16, 0x0A	// Se le suma 1 a UDAY y comparamos si hay overflow
 	BREQ	SUM_DDAY	// Si llega a 10D salta a SUM_DDAY
 	STS		UDAY, R16	// Se actualiza el valor de DDAY en la RAM
+	CALL	COMPARE_ALARM
 	RET
 SUM_DDAY:
 	CLR		R16
@@ -857,6 +917,7 @@ SUM_DDAY:
 	LDS		R16, DDAY
 	INC		R16
 	STS		DDAY, R16
+	CALL	COMPARE_ALARM
 	RET
 SUM_UMO:
 	CLR		R16
@@ -876,6 +937,7 @@ SUM_UMO:
 	CPI		R16, 0x0A
 	BREQ	SUM_DMO
 	STS		UMO, R16
+	CALL	COMPARE_ALARM
 	RET
 
 SUM_DMO:
@@ -890,6 +952,7 @@ SUM_DMO:
 	LDS		R16, DMO
 	INC		R16
 	STS		DMO, R16
+	CALL	COMPARE_ALARM
 	RET
 
 SUM_YMO:
@@ -898,6 +961,7 @@ SUM_YMO:
 	CPI		R16, 0x03
 	BREQ	HAPPY_NEW_YEAR
 	STS		UMO, R16
+	CALL	COMPARE_ALARM
 	RET
 
 HAPPY_NEW_YEAR:
@@ -912,6 +976,7 @@ HAPPY_NEW_YEAR:
 	STS		UMO, R16
 	STS		UDAY, R16
 	CLR		MES
+	CALL	COMPARE_ALARM
 	RET
 
 
@@ -1325,6 +1390,13 @@ TMR2_OV:
 TOGGLE_LEDS:
 	SBI		PINC, PC5
 	CLR		COUNT_T2
+	CPI		MODE, 0x08
+	BREQ	MODO_9
+	RJMP	OUT_TMR2
+MODO_9:
+	SBI		PINC, PC4
+	SBI		PINB, PB4
+	SBI		PINB, PB3
 	RJMP	OUT_TMR2
 
 OUT_TMR2:
