@@ -81,7 +81,7 @@ void setup()
 	
 	// Inicio de ADC
 	initADC();
-	ADCSRA	|= (1 << ADSC);
+	ADCSRA	|= (1 << ADSC);	// Se hace la primera lectura del ADC
 	
 	// Configuración de Interrupciones
 	PCICR  |= (1 << PCIE0);						// Habilita las interrupciones pin-change para PORTB
@@ -100,33 +100,32 @@ void setup()
 
 void initTMR0()
 {
-	TCCR0A  = 0;
-	TCCR0B  |= (1 << CS01) | (1 << CS00);
-	TCNT0   = TCNT0_Value;
-	TIMSK0  = (1 << TOIE0);
+	TCCR0A  = 0;							// Se usa el modo normal
+	TCCR0B  |= (1 << CS01) | (1 << CS00);	// Se configura el prescaler
+	TCNT0   = TCNT0_Value;					// Se carga el valor al TCNT0
+	TIMSK0  = (1 << TOIE0);					// Se encienden las interrupciones del timer0
 }
 
 void	 initADC()
 {
 	ADMUX	= 0;
 	ADMUX	|= (1 << REFS0);
-	//ADMUX	&= ~(1 << REFS1);  No es indispensable
 	ADMUX	|= (1 << ADLAR);
-	ADMUX	|= (1 << MUX1) | (1 << MUX0); // Todo esto se puede hacer en una línea
+	ADMUX	|= (1 << MUX1) | (1 << MUX0);	// Se configura el PC3 y la justificación
 	
 	ADCSRA	= 0;
 	ADCSRA	|= (1 << ADPS1) | (1 << ADPS0);
 	ADCSRA	|= (1 << ADIE);
-	ADCSRA	|= (1 << ADEN); // También se puede hacer en una línea
+	ADCSRA	|= (1 << ADEN);					// Se configura la interrupción y el prescaler
 }
 
 void cp_value()
 {
-	if (adc_read > counter)
+	if (adc_read > counter)			// Compara si el valor del ADC es mayor al contador
 	{
-		PORTC |= (1 << PORTC5);
+		PORTC |= (1 << PORTC5);		// Si es mayor, se enciende PC5
 	}else{
-		PORTC &= ~(1 << PORTC5);
+		PORTC &= ~(1 << PORTC5);	// Si es menor, se apaga PC5
 	}
 }
 
@@ -150,43 +149,43 @@ ISR(PCINT0_vect)
 	
 ISR(TIMER0_OVF_vect)
 {
-	TCNT0 = TCNT0_Value;
-	counter_trs++;
+	TCNT0 = TCNT0_Value;	// Se carga el valor a TCNT0
+	counter_trs++;			// Se suma a la bandera para multiplexado
 	if (counter_trs == 3)
 	{
-		counter_trs = 0;
+		counter_trs = 0;	// Si la suma llega a 3, reinicia la bandera
 	}
 	
-	switch(counter_trs)
+	switch(counter_trs)		// Se hace un switch dependiendo del valor de la bandera de los displays
 	{
-		case 0:
-		PORTD = 0;
-		PORTC &= ~((1<< PORTC4) | (1 << PORTC1) | (1 << PORTC0));
-		PORTC |= (1 << PORTC4);
-		PORTD = counter;
+		case 0:				// Caso bandera = 0
+		PORTD = 0;			// Se apaga PORTD
+		PORTC &= ~((1<< PORTC4) | (1 << PORTC1) | (1 << PORTC0));	// Se apagan los pines de los transistores
+		PORTC |= (1 << PORTC4);	// Se enciende el valor del transistor a mostrar
+		PORTD = counter;		// Se muestra el valor del contador en los leds
 		break;
 		
-		case 1:
-		PORTD = 0;
-		PORTC &= ~((1<< PORTC4) | (1 << PORTC1) | (1 << PORTC0));
-		PORTC |= (1 << PORTC1);
-		PORTD = disp_value[disp_1];
+		case 1:				// Caso bandera = 1
+		PORTD = 0;			// Se apaga PORTD
+		PORTC &= ~((1<< PORTC4) | (1 << PORTC1) | (1 << PORTC0));	// Se apagan los pines de los transistores
+		PORTC |= (1 << PORTC1);		// Se enciende el valor del transistor a mostrar
+		PORTD = disp_value[disp_1];	// Se muestra el valor de la lista en el display
 		break;
 		
-		case 2:
-		PORTD = 0;
-		PORTC &= ~((1<< PORTC4) | (1 << PORTC1) | (1 << PORTC0));
-		PORTC |= (1 << PORTC0);
-		PORTD = disp_value[disp_2];
+		case 2:				// Caso bandera = 2
+		PORTD = 0;			// Se apaga PORTD
+		PORTC &= ~((1<< PORTC4) | (1 << PORTC1) | (1 << PORTC0));	// Se apagan los pines de los transistores
+		PORTC |= (1 << PORTC0);		// Se enciende el valor del transistor a mostrar
+		PORTD = disp_value[disp_2];	// Se muestra el valor de la lista en el display
 		break;
 	}
 }
 
 ISR(ADC_vect)
 {
-	adc_read = ADCH;
-	disp_2 = (adc_read >> 4) & 0x0F; // Decenas
-	disp_1 = adc_read & 0x0F; // Unidades
-	cp_value();
-	ADCSRA	|= (1 << ADSC);
+	adc_read = ADCH;					// Se lee el valor de ADCH
+	disp_2 = (adc_read >> 4) & 0x0F;	// Separa a decenas
+	disp_1 = adc_read & 0x0F;			// Separa a unidades
+	cp_value();							// Se realiza la comparación de los leds con los displays
+	ADCSRA	|= (1 << ADSC);				// Se realiza la lectura de ADC
 }
