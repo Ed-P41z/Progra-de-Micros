@@ -31,9 +31,6 @@ int main(void)
 	
 	while(1)	// Entra al bucle infinito en donde se ejecuta el programa
 	{
-		//adc_map = (adc_read * 1000) / 255 + 1000;
-		//dutyCycle = adc_map;			// Se actualiza el valor del dutyCycle con la lectura del 
-		//dutyCycle = ((adc_read * 4000) / 255) + 1000;
 	}	
 }
 
@@ -89,8 +86,7 @@ void	 initADC()
 ISR(ADC_vect)
 {
 	adc_read = ADCH;
-	dutyCycle = ADC_to_PWM_Servo(adc_read);
-	//dutyCycle = PWM_to_Servo(adc_map);
+	dutyCycle = ADC_to_PWM_Servo(adc_read);	// Se llama a la función que mapea el ADC al servo
 	updateDutyCycle_T1(dutyCycle);	// Se llama la función que hace la actualización al registro
 	_delay_ms(1);
 	ADCSRA	|= (1 << ADSC);				// Se realiza la lectura de ADC
