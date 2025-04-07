@@ -11,6 +11,8 @@
 
 // Prototipos de funciones
 void initPWM0A(uint8_t invertido, uint16_t perscaler);
-void updateDutyCycle_T1(uint8_t duty);
+void updateDutyCycle_T1(uint16_t duty);
+uint16_t ADC_to_PWM_Servo(uint8_t lec_adc);
+uint16_t PWM_to_Servo(uint16_t mapeo);
 
 #endif /* PWM1_H_ */

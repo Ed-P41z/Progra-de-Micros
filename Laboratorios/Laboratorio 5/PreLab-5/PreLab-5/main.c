@@ -14,7 +14,8 @@
 #include "PWM1/PWM1.h"
 
 uint8_t adc_read;
-uint8_t dutyCycle;
+uint16_t dutyCycle;
+uint16_t adc_map;
 
 //*********************************************
 // Function prototypes
@@ -30,8 +31,9 @@ int main(void)
 	
 	while(1)	// Entra al bucle infinito en donde se ejecuta el programa
 	{
-		dutyCycle = adc_read;			// Se actualiza el valor del dutyCycle con la lectura del ADC
-		updateDutyCycle_T1(dutyCycle);	// Se llama la función que hace la actualización al registro
+		//adc_map = (adc_read * 1000) / 255 + 1000;
+		//dutyCycle = adc_map;			// Se actualiza el valor del dutyCycle con la lectura del 
+		//dutyCycle = ((adc_read * 4000) / 255) + 1000;
 	}	
 }
 
@@ -73,10 +75,10 @@ void	 initADC()
 	ADMUX	= 0;
 	ADMUX	|= (1 << REFS0);
 	ADMUX	|= (1 << ADLAR);
-	ADMUX	&= ~((1 << MUX2) | (1 << MUX1) | (1 << MUX0));	// Se configura el PC0 y la justificación
+	ADMUX	&= ~((1 << MUX3) | (1 << MUX2) | (1 << MUX1) | (1 << MUX0));	// Se configura el PC0 y la justificación
 	
 	ADCSRA	= 0;
-	ADCSRA	|= (1 << ADPS1) | (1 << ADPS0);
+	ADCSRA	|= (1 << ADPS2) | (1 << ADPS1);
 	ADCSRA	|= (1 << ADIE);
 	ADCSRA	|= (1 << ADEN);					// Se configura la interrupción y el prescaler
 }
@@ -86,7 +88,11 @@ void	 initADC()
 // Interrupt routines
 ISR(ADC_vect)
 {
-	adc_read = ADCH;					// Se lee el valor de ADCH
+	adc_read = ADCH;
+	dutyCycle = ADC_to_PWM_Servo(adc_read);
+	//dutyCycle = PWM_to_Servo(adc_map);
+	updateDutyCycle_T1(dutyCycle);	// Se llama la función que hace la actualización al registro
+	_delay_ms(1);
 	ADCSRA	|= (1 << ADSC);				// Se realiza la lectura de ADC
 }
 

@@ -23,8 +23,9 @@ void initPWM0A(uint8_t invertido, uint16_t perscaler)
 	}
 	
 
-	TCCR1A	|= (1 << WGM10); 
-	TCCR1B	|= (1 << WGM12);	// Fast PWM y top = 0x00FF
+	TCCR1A	|= (1 << WGM11); 
+	TCCR1B	|= (1 << WGM13) | (1 << WGM12);	
+	ICR1 = 2499; // Fast PWM y top = 0x09C3
 	
 	TCCR1B	&= ~((1 << CS12) | (1 << CS11) | (1 << CS10));	// Se apagan los bits de configuración del Prescaler
 	switch(perscaler){
@@ -46,7 +47,12 @@ void initPWM0A(uint8_t invertido, uint16_t perscaler)
 	}
 }
 
-void updateDutyCycle_T1(uint8_t duty)
+void updateDutyCycle_T1(uint16_t duty)
 {
 	OCR1A = duty;	// Se actualiza el bit del duty cycle
+}
+
+uint16_t ADC_to_PWM_Servo(uint8_t lec_adc)
+{
+	return (lec_adc * 239UL / 255) + 69;
 }
