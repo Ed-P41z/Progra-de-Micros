@@ -10,7 +10,7 @@
 #include <avr/interrupt.h>
 #include <util/delay.h>
 
-void initPWM0A(uint8_t invertido, uint16_t perscaler)
+void initPWM1A(uint8_t invertido, uint16_t perscaler)
 {
 	TCCR1A	&= ~((1 << COM1A1) | (1 << COM1A0));	// Se apagan los bits de configuración del TMR1
 
@@ -52,7 +52,7 @@ void updateDutyCycle_T1(uint16_t duty)
 	OCR1A = duty;	// Se actualiza el bit del duty cycle
 }
 
-uint16_t ADC_to_PWM_Servo(uint8_t lec_adc)
+uint16_t ADC_to_PWM_ServoT1(uint8_t lec_adc) // (312-69)
 {
 	return (lec_adc * 239UL / 255) + 69;	// Se realiza la conversión, tomando en cuenta los límites superior e inferior calculados para el servo
 }

@@ -12,10 +12,12 @@
 #include <avr/interrupt.h>
 #include <util/delay.h>
 #include "PWM1/PWM1.h"
+#include "PWM2/PWM2.h"
 
 uint8_t adc_read;
 uint16_t dutyCycle;
 uint16_t adc_map;
+uint8_t counter_ADC;
 
 //*********************************************
 // Function prototypes
@@ -53,9 +55,11 @@ void setup()
 	PORTC	= 0x00;			// PORTC sin pull-up
 	
 	// Inicialización de Variables
+	counter_ADC = 0;
 	
 	// Inicio de PWM
-	initPWM0A(0, 8);		// Se llama la función de inicio del PWM del Timer1
+	initPWM1A(0, 8);		// Se llama la función de inicio del PWM del Timer1
+	initPWM2A(0, 8);		// Se llama la función de inicio del PWM del Timer2
 	
 	// Inicio de ADC
 	initADC();
@@ -86,9 +90,31 @@ void	 initADC()
 ISR(ADC_vect)
 {
 	adc_read = ADCH;
-	dutyCycle = ADC_to_PWM_Servo(adc_read);	// Se llama a la función que mapea el ADC al servo
-	updateDutyCycle_T1(dutyCycle);	// Se llama la función que hace la actualización al registro
-	_delay_ms(1);
+	
+	
+	switch(counter_ADC)
+	{
+		case 0:
+		counter_ADC = 1;
+		ADMUX	&= ~((1 << MUX3) | (1 << MUX2) | (1 << MUX1) | (1 << MUX0));
+		dutyCycle = ADC_to_PWM_ServoT2(adc_read);	// Se llama a la función que mapea el ADC al servo
+		updateDutyCycle_T2(dutyCycle);	// Se llama la función que hace la actualización al registro
+		break;
+		
+		case 1:
+		counter_ADC = 0;
+		dutyCycle = ADC_to_PWM_ServoT1(adc_read);	// Se llama a la función que mapea el ADC al servo
+		updateDutyCycle_T1(dutyCycle);	// Se llama la función que hace la actualización al registro
+		ADMUX	&= ~((1 << MUX3) | (1 << MUX2) | (1 << MUX1) | (1 << MUX0));
+		ADMUX	|= (1 << MUX0);
+		break;
+		//case 2:
+		//counter_ADC = 0;
+		//ADMUX	&= ~(1 << MUX0);
+		//ADMUX	|= (1 << MUX1);
+		//break;
+	}
+	
 	ADCSRA	|= (1 << ADSC);				// Se realiza la lectura de ADC
 }
 
