@@ -59,7 +59,7 @@ void setup()
 	
 	// Inicio de PWM
 	initPWM1A(0, 8);		// Se llama la función de inicio del PWM del Timer1
-	initPWM2A(0, 8);		// Se llama la función de inicio del PWM del Timer2
+	initPWM2A(0, 64);		// Se llama la función de inicio del PWM del Timer2
 	
 	// Inicio de ADC
 	initADC();

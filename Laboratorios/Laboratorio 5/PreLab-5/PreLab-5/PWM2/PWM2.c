@@ -57,5 +57,5 @@ void updateDutyCycle_T2(uint16_t duty)
 
 uint16_t ADC_to_PWM_ServoT2(uint8_t lec_adc)
 {
-	return (lec_adc * 220UL / 255) + 50;	// Se realiza la conversión, tomando en cuenta los límites superior e inferior calculados para el servo
+	return (lec_adc * 35UL / 255) + 5;	// Se realiza la conversión, tomando en cuenta los límites superior e inferior calculados para el servo
 }
