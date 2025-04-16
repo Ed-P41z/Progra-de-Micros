@@ -11,6 +11,7 @@
 #include <avr/io.h>
 #include <avr/interrupt.h>
 #include <util/delay.h>
+#include "PWM0-Manual/PWM0.h"
 #include "PWM1/PWM1.h"
 #include "PWM2/PWM2.h"
 
@@ -18,6 +19,9 @@ uint8_t adc_read;
 uint16_t dutyCycle;
 uint16_t adc_map;
 uint8_t counter_ADC;
+uint8_t pwm0_counter;
+uint8_t pwm0_map;
+uint8_t pwm0_adc;
 
 //*********************************************
 // Function prototypes
@@ -58,6 +62,7 @@ void setup()
 	counter_ADC = 0;
 	
 	// Inicio de PWM
+	initPWM0A();
 	initPWM1A(0, 8);		// Se llama la función de inicio del PWM del Timer1
 	initPWM2A(0, 64);		// Se llama la función de inicio del PWM del Timer2
 	
@@ -66,7 +71,7 @@ void setup()
 	ADCSRA	|= (1 << ADSC);	// Se hace la primera lectura del ADC
 	
 	// Configuración de Interrupciones
-	
+	TIMSK0 |= (1 << TOIE0); // Se habilita la interrupción de overflow de Timer0
 	
 	sei(); // Se encienden las interrupciones globales
 }
@@ -95,27 +100,41 @@ ISR(ADC_vect)
 	switch(counter_ADC)
 	{
 		case 0:
-		counter_ADC = 1;
+		counter_ADC++;
+		pwm0_adc = ADCH;
 		ADMUX	&= ~((1 << MUX3) | (1 << MUX2) | (1 << MUX1) | (1 << MUX0));
-		dutyCycle = ADC_to_PWM_ServoT2(adc_read);	// Se llama a la función que mapea el ADC al servo
-		updateDutyCycle_T2(dutyCycle);	// Se llama la función que hace la actualización al registro
+		
 		break;
 		
 		case 1:
-		counter_ADC = 0;
+		counter_ADC++;
 		dutyCycle = ADC_to_PWM_ServoT1(adc_read);	// Se llama a la función que mapea el ADC al servo
 		updateDutyCycle_T1(dutyCycle);	// Se llama la función que hace la actualización al registro
 		ADMUX	&= ~((1 << MUX3) | (1 << MUX2) | (1 << MUX1) | (1 << MUX0));
 		ADMUX	|= (1 << MUX0);
 		break;
-		//case 2:
-		//counter_ADC = 0;
-		//ADMUX	&= ~(1 << MUX0);
-		//ADMUX	|= (1 << MUX1);
-		//break;
+		
+		case 2:
+		counter_ADC = 0;
+		ADMUX	&= ~(1 << MUX0);
+		ADMUX	|= (1 << MUX1);
+		dutyCycle = ADC_to_PWM_ServoT2(adc_read);	// Se llama a la función que mapea el ADC al servo
+		updateDutyCycle_T2(dutyCycle);	// Se llama la función que hace la actualización al registro
+		break;
 	}
 	
 	ADCSRA	|= (1 << ADSC);				// Se realiza la lectura de ADC
 }
 
+ISR(TIMER0_OVF_vect)
+{
+	pwm0_counter++;
+	pwm0_map = adc0_map(pwm0_adc);
+	pwm0_cp(pwm0_counter, pwm0_map);
+	if (pwm0_counter == 25)
+	{
+		pwm0_counter = 0;
+	}
+	TCNT0	= 251;
+}
 
