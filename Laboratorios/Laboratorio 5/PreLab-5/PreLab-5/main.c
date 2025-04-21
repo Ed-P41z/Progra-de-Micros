@@ -15,6 +15,7 @@
 #include "PWM1/PWM1.h"
 #include "PWM2/PWM2.h"
 
+// Variables a usar
 uint8_t adc_read;
 uint16_t dutyCycle;
 uint16_t adc_map;
@@ -100,9 +101,9 @@ ISR(ADC_vect)
 	switch(counter_ADC)
 	{
 		case 0:
-		counter_ADC++;
-		pwm0_adc = ADCH;
-		ADMUX	&= ~((1 << MUX3) | (1 << MUX2) | (1 << MUX1) | (1 << MUX0));
+		counter_ADC++;		// Se suma el contador que sirve para multiplexar
+		pwm0_adc = ADCH;	// Se guarda ADCH en una variable para usarla posteriormente
+		ADMUX	&= ~((1 << MUX3) | (1 << MUX2) | (1 << MUX1) | (1 << MUX0));	// Se selecciona pc0
 		
 		break;
 		
@@ -128,13 +129,13 @@ ISR(ADC_vect)
 
 ISR(TIMER0_OVF_vect)
 {
-	pwm0_counter++;
-	pwm0_map = adc0_map(pwm0_adc);
-	pwm0_cp(pwm0_counter, pwm0_map);
+	pwm0_counter++;						// Se suma el contador del timer
+	pwm0_map = adc0_map(pwm0_adc);		// Se llama a la función de mapeo para valores a usar en pwm del led
+	pwm0_cp(pwm0_counter, pwm0_map);	// Se hace la función que compara para hacer el pwm
 	if (pwm0_counter == 25)
 	{
 		pwm0_counter = 0;
-	}
-	TCNT0	= 251;
+	}									// Se hace un if para evitar parpadeo
+	TCNT0	= 251;						// Se carca el valor a TCNT0
 }
 
