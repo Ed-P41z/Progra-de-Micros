@@ -14,7 +14,7 @@ void initPWM0AB()
 
 	TCCR0A	|= (1 << WGM00) | (1 << WGM01); // Fast PWM, Top = 0x00FF
 	
-	TCCR0B	|= (1 << CS01);	// Prescaler = 8
+	TCCR0B	|= (1 << CS01) | (1 << CS00);	// Prescaler = 64
 }
 
 uint16_t ADC_to_PWM_ServoT0(uint8_t lec_adc)

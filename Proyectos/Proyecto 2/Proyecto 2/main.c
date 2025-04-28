@@ -67,7 +67,6 @@ void setup()
 	ADCSRA	|= (1 << ADSC);	// Se hace la primera lectura del ADC
 	
 	// Configuración de Interrupciones
-	TIMSK0 |= (1 << TOIE0); // Se habilita la interrupción de overflow de Timer0
 	
 	sei(); // Se encienden las interrupciones globales
 }
@@ -97,25 +96,33 @@ ISR(ADC_vect)
 	{
 		case 0:
 		counter_ADC++;		// Se suma el contador que sirve para multiplexar
-		OCR0A = adc_read;
+		dutyCycle = ADC_to_PWM_ServoT1(adc_read);	// Se llama a la función que mapea el ADC al servo
+		updateDutyCycle_T1B(dutyCycle);	// Se llama la función que hace la actualización al registro
 		ADMUX	&= ~((1 << MUX3) | (1 << MUX2) | (1 << MUX1) | (1 << MUX0));	// Se selecciona pc0
-		
 		break;
 		
 		case 1:
 		counter_ADC++;
-		dutyCycle = ADC_to_PWM_ServoT1(adc_read);	// Se llama a la función que mapea el ADC al servo
-		updateDutyCycle_T1(dutyCycle);	// Se llama la función que hace la actualización al registro
+		dutyCycle = ADC_to_PWM_ServoT0(adc_read);	// Se llama a la función que mapea el ADC al servo
+		updateDutyCycle_T0A(dutyCycle);	// Se llama la función que hace la actualización al registro
 		ADMUX	&= ~((1 << MUX3) | (1 << MUX2) | (1 << MUX1) | (1 << MUX0));
-		ADMUX	|= (1 << MUX0);
+		ADMUX	|= (1 << MUX0);	// Se selecciona pc1
 		break;
 		
 		case 2:
-		counter_ADC = 0;
+		counter_ADC++;
+		dutyCycle = ADC_to_PWM_ServoT0(adc_read);	// Se llama a la función que mapea el ADC al servo
+		updateDutyCycle_T0B(dutyCycle);	// Se llama la función que hace la actualización al registro
 		ADMUX	&= ~(1 << MUX0);
-		ADMUX	|= (1 << MUX1);
+		ADMUX	|= (1 << MUX1);	// Se selecciona pc2
+		break;
+		
+		case 3:
+		counter_ADC = 0;
 		dutyCycle = ADC_to_PWM_ServoT1(adc_read);	// Se llama a la función que mapea el ADC al servo
-		updateDutyCycle_T1(dutyCycle);	// Se llama la función que hace la actualización al registro
+		updateDutyCycle_T1A(dutyCycle);	// Se llama la función que hace la actualización al registro
+		ADMUX	&= ~((1 << MUX3) | (1 << MUX2) | (1 << MUX1) | (1 << MUX0));
+		ADMUX	|= (1 << MUX1) | (1 << MUX0);	// Se selecciona pc3
 		break;
 	}
 	
