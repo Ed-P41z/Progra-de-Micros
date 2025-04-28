@@ -19,11 +19,13 @@ uint8_t adc_read;
 uint16_t dutyCycle;
 uint16_t adc_map;
 uint8_t counter_ADC;
+char recibido;
 
 //*********************************************
 // Function prototypes
 void setup();
 void initADC();
+void initUART();
 
 //*********************************************
 // Main Function
@@ -84,6 +86,24 @@ void initADC()
 	ADCSRA	|= (1 << ADEN);					// Se configura la interrupción y el prescaler
 }
 
+void initUART()
+{
+	// Paso 1: Configurar pines PD0 (rx) y PD1 (tx)
+	DDRD	|= (1 << DDD1);
+	DDRD	&= ~(1 << DDD0);
+	
+	// Paso 2: Configurar UCSR0A
+	UCSR0A |= (1 << U2X0);
+	
+	// Paso 3: Configurar UCSR0B, Habilitando interrupts al recibir; Habilitando recepción; Habilitando transmisión
+	UCSR0B |= (1 << RXCIE0) | (1 << RXEN0) | (1 << TXEN0);
+	
+	// Paso 4: UCSR0C
+	UCSR0C |= (1 << UCSZ00) | (1 << UCSZ01);
+	
+	// Paso 5: UBRR0: UBRR0 = 103 -> 9600 @ 16MHz
+	UBRR0 = 12;
+}
 
 //*********************************************
 // Interrupt routines
@@ -127,4 +147,10 @@ ISR(ADC_vect)
 	}
 	
 	ADCSRA	|= (1 << ADSC);				// Se realiza la lectura de ADC
+}
+
+ISR(USART_RX_vect)
+{
+	recibido = UDR0;  // Leer el carácter recibido desde el registro de UART
+	
 }
