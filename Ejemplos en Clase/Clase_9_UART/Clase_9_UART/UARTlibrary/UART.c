@@ -39,4 +39,4 @@ void writeString(char* texto)
 	{
 		writeChar(*(texto+i));
 	}
-}
+}	
