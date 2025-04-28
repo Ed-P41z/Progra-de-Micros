@@ -102,7 +102,8 @@ ISR(ADC_vect)
 	{
 		case 0:
 		counter_ADC++;		// Se suma el contador que sirve para multiplexar
-		pwm0_adc = ADCH;	// Se guarda ADCH en una variable para usarla posteriormente
+		pwm0_adc = adc_read;	// Se guarda ADCH en una variable para usarla posteriormente
+		OCR0A = adc_read;
 		ADMUX	&= ~((1 << MUX3) | (1 << MUX2) | (1 << MUX1) | (1 << MUX0));	// Se selecciona pc0
 		
 		break;
@@ -129,13 +130,18 @@ ISR(ADC_vect)
 
 ISR(TIMER0_OVF_vect)
 {
-	pwm0_counter++;						// Se suma el contador del timer
-	pwm0_map = adc0_map(pwm0_adc);		// Se llama a la función de mapeo para valores a usar en pwm del led
-	pwm0_cp(pwm0_counter, pwm0_map);	// Se hace la función que compara para hacer el pwm
-	if (pwm0_counter == 25)
-	{
-		pwm0_counter = 0;
-	}									// Se hace un if para evitar parpadeo
-	TCNT0	= 251;						// Se carca el valor a TCNT0
+	PORTD |= (1 << PORTD2);
+	//pwm0_counter++;						// Se suma el contador del timer
+	//pwm0_map = adc0_map(pwm0_adc);		// Se llama a la función de mapeo para valores a usar en pwm del led
+	//pwm0_cp(pwm0_counter, pwm0_adc);	// Se hace la función que compara para hacer el pwm
+	//if (pwm0_counter == 25)
+	//{
+	//	pwm0_counter = 0;
+	//}									// Se hace un if para evitar parpadeo
+	//TCNT0	= 251;						// Se carca el valor a TCNT0
 }
 
+ISR(TIMER0_COMPA_vect)
+{
+	PORTD &= ~(1 << PORTD2);
+}
