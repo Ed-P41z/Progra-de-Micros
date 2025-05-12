@@ -12,7 +12,9 @@
 #include <avr/interrupt.h>
 char recibido;
 uint8_t mostrar_menu;
-
+uint8_t estado_actual;
+uint8_t pb_flag;
+uint8_t estado_anterior;
 
 //*********************************************
 // Function prototypes
@@ -50,10 +52,15 @@ int main(void)
 			escribir_cadena("\n Led Apagado");
 			PORTB &= ~(1 << PORTB0);
 			mostrar_menu = 1;       // Se vuelve al menú principal
-			recibido = 0;
-			
+			recibido = 0;	
 		}
-	}	
+		else if (pb_flag == 1)
+		{
+			// Toggle LED en PB1
+			PORTB ^= (1 << PORTB1);
+			pb_flag = 0;
+		}
+	}
 }
 
 //*********************************************
@@ -83,6 +90,8 @@ void setup()
 	initUART();
 	
 	// Configuración de Interrupciones
+	PCICR |= (1 << PCIE1);      // Habilita interrupción para PCINT1 (PORTC)
+	PCMSK1 |= (1 << PCINT13);   // Habilita interrupción específicamente para PC5
 	
 	sei(); // Se encienden las interrupciones globales
 }
@@ -125,4 +134,15 @@ void escribir_cadena (char* cadena)
 ISR(USART_RX_vect)
 {
 	recibido = UDR0;  // Leer el carácter recibido desde el registro de UART
+}
+
+ISR(PCINT1_vect)
+{
+	estado_actual = PINC;  // Leer el estado actual de los botones
+	
+	if (((estado_anterior & (1 << PORTC5)) != 0) && ((estado_actual & (1 << PORTC5)) == 0))	// Se verifica si el botón está presionado y si hubo cambio de estado
+	{
+		pb_flag = 1;		// Si PC5 está presionado y hubo cambio de estado, se enciende la bandera de acción de ese botón
+	}
+	estado_anterior = estado_actual;  // Guardar el estado actual a estado anterior
 }

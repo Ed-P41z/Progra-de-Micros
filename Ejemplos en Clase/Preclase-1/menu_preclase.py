@@ -7,4 +7,4 @@ while True:
     ingreso = input("Ingresa 1 para encener el led o 2 para apagar el led: ")
     com_arduino.write(bytes(ingreso, 'utf-8'))
     retorno = com_arduino.readline()
-    print("Datos recibidos: ", retorno)
+    #print("Datos recibidos: ", retorno)
