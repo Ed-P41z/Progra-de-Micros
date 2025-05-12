@@ -10,8 +10,10 @@
 #define PWM0_H_
 
 void initPWM0AB();
-uint16_t ADC_to_PWM_ServoT0(uint8_t lec_adc);
+uint16_t ADC_to_PWM_ServoT0A(uint8_t lec_adc);
+uint16_t ADC_to_PWM_ServoT0B(uint8_t lec_adc);
 void updateDutyCycle_T0A(uint16_t duty);
 void updateDutyCycle_T0B(uint16_t duty);
+
 
 #endif /* PWM0_H_ */

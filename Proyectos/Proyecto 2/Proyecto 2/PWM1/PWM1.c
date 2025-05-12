@@ -18,9 +18,14 @@ void initPWM1AB()
 	TCCR1B	|= (1 << CS11) | (1 << CS10);	// Prescaler = 64
 }
 
-uint16_t ADC_to_PWM_ServoT1(uint8_t lec_adc)
+uint16_t ADC_to_PWM_ServoT1A(uint8_t lec_adc)
 {
-	return (lec_adc * 35UL / 255) + 5; 	// Se realiza la conversión, tomando en cuenta los límites superior e inferior calculados para el servo
+	return (lec_adc * 35UL / 255)/2 + 5; 	// Se realiza la conversión, tomando en cuenta los límites superior e inferior calculados para el servo
+}
+
+uint16_t ADC_to_PWM_ServoT1B(uint8_t lec_adc)
+{
+	return (lec_adc * 35UL / 255)/3 + 5; 	// Se realiza la conversión, tomando en cuenta los límites superior e inferior calculados para el servo
 }
 
 void updateDutyCycle_T1A(uint16_t duty)
