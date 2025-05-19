@@ -9,11 +9,11 @@
 #ifndef PWM0_H_
 #define PWM0_H_
 
-void initPWM0AB();
-uint16_t ADC_to_PWM_ServoT0A(uint8_t lec_adc);
-uint16_t ADC_to_PWM_ServoT0B(uint8_t lec_adc);
-void updateDutyCycle_T0A(uint16_t duty);
-void updateDutyCycle_T0B(uint16_t duty);
+void initPWM0AB();	// Función para iniciar PWM 0, canales A y B
+uint16_t ADC_to_PWM_ServoT0A(uint8_t lec_adc);	// Función para convertir valor ADC a valor PWM0A
+uint16_t ADC_to_PWM_ServoT0B(uint8_t lec_adc);	// Función para convertir valor ADC a valor PWM0B
+void updateDutyCycle_T0A(uint16_t duty);	// Función para actualizar el duty cycle del PWM0A
+void updateDutyCycle_T0B(uint16_t duty);	// Función para actualizar el duty cycle del PWM0B
 
 
 #endif /* PWM0_H_ */

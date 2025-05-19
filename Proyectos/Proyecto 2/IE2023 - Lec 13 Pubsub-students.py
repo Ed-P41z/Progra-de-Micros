@@ -14,17 +14,17 @@ run_count = 0
 # Remember, your key is a secret,
 # so make sure not to publish it when you publish this code!
 ADAFRUIT_IO_USERNAME = "Ed_P41z"
-ADAFRUIT_IO_KEY = "aio_KAcC597f9r39tRBGl4Xpm8kGEvt6"
+ADAFRUIT_IO_KEY = ""
 
 # Set to the ID of the feed to subscribe to for updates.
 FEED_ID_servo1_TX = 'Servo1_TX'
 FEED_ID_servo2_TX = 'Servo2_TX'
 FEED_ID_servo3_TX = 'Servo3_TX'
 FEED_ID_servo4_TX = 'Servo4_TX'
-FEED_ID_servo1_RX = 'Servo_1RX'
-FEED_ID_servo2_RX = 'Servo_2RX'
-FEED_ID_servo3_RX = 'Servo_3RX'
-FEED_ID_servo4_RX = 'Servo_4RX'
+FEED_ID_servo1_RX = 'proyecto-2.servo-1rx'
+FEED_ID_servo2_RX = 'proyecto-2.servo-2rx'
+FEED_ID_servo3_RX = 'proyecto-2.servo-3rx'
+FEED_ID_servo4_RX = 'proyecto-2.servo-4rx'
 FEED_ID_EEPROM_TX = 'EEPROM_TX'
 FEED_ID_Mode_TX   = 'Mode_TX'
 
@@ -93,6 +93,7 @@ client.connect()
 # doing things in your program.
 client.loop_background()
 
+mensaje = 1
 
 while True:
     """ 
@@ -103,13 +104,17 @@ while True:
     print('sending count: ', run_count)
     client.publish(FEED_ID_Send, run_count)
     """
-    print('Running "main loop" ')
+    if (mensaje == 1):
+        print('Running "main loop" ')
+        mensaje = 0
 
     if miarduino.in_waiting > 0:
         # Leer los valores enviados por el Arduino
         data = miarduino.readline().decode('utf-8').strip()  # Lee la línea y elimina saltos de línea
         print(f'Datos recibidos del Arduino: {data}')
         
+        value = 0
+
         if data.startswith("S1:"):
             value = data[3:]
             print(f"Valor de S1:{value}\n")
@@ -126,5 +131,5 @@ while True:
             value = data[3:]
             print(f"Valor de S4: {value}\n")
             client.publish(FEED_ID_servo4_RX, value)
-
-    time.sleep(3)
+        
+        print(f"Publicando en Adafruit: '{value}'")
